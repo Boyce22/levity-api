@@ -1,0 +1,7 @@
+.env
+.idea
+.vscode
+*.md
+src/infrastructure/migrations/*.ts
+package.json
+package-lock.json
