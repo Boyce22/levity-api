@@ -70,5 +70,10 @@ export function boardRoutes(service: BoardService, authenticate: PreHandler) {
       await service.deleteCard(request.user.id, cardId);
       reply.status(204).send();
     });
+
+    fastify.get('/:workspaceId/cards/:cardId/history', { preHandler: [authenticate] }, async (request) => {
+      const { cardId } = request.params as { cardId: string };
+      return service.getCardHistory(request.user.id, cardId);
+    });
   };
 }

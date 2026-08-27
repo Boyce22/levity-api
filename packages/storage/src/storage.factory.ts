@@ -13,6 +13,7 @@ export function createStorageProvider(config: Env = env): IStorageProvider {
         applicationKey: config.BACKBLAZE_APP_KEY ?? '',
         bucketId: config.BACKBLAZE_BUCKET_ID ?? '',
         bucketName: config.BACKBLAZE_BUCKET_NAME ?? '',
+        downloadUrl: config.BACKBLAZE_DOWNLOAD_URL,
       });
     case 's3':
       return new S3Provider();

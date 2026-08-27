@@ -8,13 +8,20 @@ export class NotificationsService {
     userId: string,
     query: QueryNotificationsInput,
   ): Promise<PaginatedResponse<NotificationResponse>> {
-    const { data, total } = await this.notificationRepository.findForUser(userId, query);
+    const { data, total, nextCursor } = await this.notificationRepository.findForUser(userId, query);
+    const items = data.map(toNotificationResponse);
+
+    if (query.cursor) {
+      return { items, limit: query.limit, nextCursor };
+    }
+
+    const resolvedTotal = total ?? data.length;
     return {
-      items: data.map(toNotificationResponse),
-      total,
+      items,
+      total: resolvedTotal,
       page: query.page,
       limit: query.limit,
-      totalPages: Math.ceil(total / query.limit),
+      totalPages: Math.ceil(resolvedTotal / query.limit),
     };
   }
 

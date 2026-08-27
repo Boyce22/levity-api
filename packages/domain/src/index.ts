@@ -25,3 +25,8 @@ export * from './diagrams/schemas';
 export * from './diagrams/dtos';
 
 export * from './files/types';
+export * from './files/schemas';
+
+export * from './sprints/enums';
+export * from './sprints/schemas';
+export * from './sprints/dtos';

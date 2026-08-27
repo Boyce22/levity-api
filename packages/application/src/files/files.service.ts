@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import type { Logger } from 'pino';
 import type { UploadResult, UploadedFile } from '@levity/domain';
+import { BadRequestError } from '@levity/observability';
 import type { WorkspaceMemberRepository } from '@levity/persistence';
 import type { CompressorPort, StoragePort } from './storage.port';
 
@@ -38,9 +39,50 @@ export class FilesService {
     return result;
   }
 
+  async getSignedDownloadUrl(
+    userId: string,
+    workspaceId: string,
+    category: string,
+    filename: string,
+    expiresInSeconds = 900,
+  ): Promise<string> {
+    await this.assertAccessToCategory(userId, workspaceId, category);
+    const key = this.resolveStorageKey(workspaceId, category, filename);
+    return this.storage.getSignedUrl(key, expiresInSeconds);
+  }
+
+  async resolveUrl(key: string | null | undefined, ttlSeconds = 3600): Promise<string | undefined> {
+    if (!key) return undefined;
+    if (key.startsWith('http://') || key.startsWith('https://')) return key;
+    return this.storage.getSignedUrl(key, ttlSeconds);
+  }
+
+  async resolveUrls(keys: string[], ttlSeconds = 3600): Promise<Map<string, string>> {
+    const unique = [...new Set(keys.filter(Boolean))];
+    const urls = await Promise.all(unique.map((k) => this.resolveUrl(k, ttlSeconds)));
+    return new Map(unique.flatMap((k, i) => (urls[i] ? [[k, urls[i]]] : [])));
+  }
+
   async deleteFile(userId: string, workspaceId: string, key: string): Promise<void> {
     await this.memberRepository.assertMember(userId, workspaceId);
+    this.assertKeyBelongsToWorkspace(workspaceId, key);
     await this.storage.delete(key);
     this.logger.info({ userId, workspaceId, key }, 'File deleted');
+  }
+
+  private async assertAccessToCategory(userId: string, workspaceId: string, category: string): Promise<void> {
+    if (category === 'attachments') {
+      await this.memberRepository.assertMember(userId, workspaceId);
+    }
+  }
+
+  private resolveStorageKey(workspaceId: string, category: string, filename: string): string {
+    return category === 'avatars' ? `avatars/${filename}` : `${workspaceId}/${category}/${filename}`;
+  }
+
+  private assertKeyBelongsToWorkspace(workspaceId: string, key: string): void {
+    if (!key.startsWith(`${workspaceId}/`)) {
+      throw new BadRequestError('Invalid file key for workspace');
+    }
   }
 }

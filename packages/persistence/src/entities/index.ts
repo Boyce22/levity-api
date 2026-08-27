@@ -10,6 +10,8 @@ import { CardHistory } from './card-history.entity';
 import { Comment } from './comment.entity';
 import { Notification } from './notification.entity';
 import { Diagram } from './diagram.entity';
+import { Sprint } from './sprint.entity';
+import { SprintCard } from './sprint-card.entity';
 
 export const entities = [
   User,
@@ -24,6 +26,8 @@ export const entities = [
   Comment,
   Notification,
   Diagram,
+  Sprint,
+  SprintCard,
 ];
 
 export {
@@ -39,6 +43,8 @@ export {
   Comment,
   Notification,
   Diagram,
+  Sprint,
+  SprintCard,
 };
 
 export type { CardWithCount } from './card.entity';

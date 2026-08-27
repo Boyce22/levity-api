@@ -8,10 +8,31 @@ export class NotificationRepository {
   async findForUser(
     userId: string,
     query: QueryNotificationsInput,
-  ): Promise<{ data: Notification[]; total: number }> {
-    const { read, page, limit } = query;
+  ): Promise<{ data: Notification[]; total?: number; nextCursor?: string }> {
+    const { read, page, limit, cursor } = query;
     const where: Record<string, unknown> = { user_id: userId };
     if (read !== undefined) where.read = read;
+
+    if (cursor) {
+      const qb = this.repository
+        .createQueryBuilder('notification')
+        .where('notification.user_id = :userId', { userId })
+        .andWhere('notification.created_at < :cursor', { cursor: new Date(cursor) })
+        .orderBy('notification.created_at', 'DESC')
+        .take(limit + 1);
+
+      if (read !== undefined) {
+        qb.andWhere('notification.read = :read', { read });
+      }
+
+      const results = await qb.getMany();
+      const hasMore = results.length > limit;
+      const data = hasMore ? results.slice(0, limit) : results;
+      return {
+        data,
+        nextCursor: hasMore ? data[data.length - 1].created_at.toISOString() : undefined,
+      };
+    }
 
     const [data, total] = await this.repository.findAndCount({
       where,

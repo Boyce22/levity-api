@@ -16,9 +16,9 @@ export function usersRoutes(service: UsersService, authenticate: PreHandler) {
     });
 
     fastify.get('/', { preHandler: [authenticate] }, async (request) => {
-      const { workspace_id } = validateDto(queryUsersSchema, request.query);
+      const { workspace_id, search } = validateDto(queryUsersSchema, request.query);
       if (!workspace_id) return [];
-      return service.getUsersByWorkspace(workspace_id);
+      return service.getUsersByWorkspace(workspace_id, search);
     });
   };
 }

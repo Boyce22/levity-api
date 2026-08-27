@@ -7,17 +7,19 @@ import {
   type WorkspaceInviteResponse,
 } from '@levity/domain';
 import { ConflictError, NotFoundError } from '@levity/observability';
-import type {
+import {
   WorkspaceMember,
   WorkspaceInvite,
   WorkspaceMemberRepository,
   WorkspaceInviteRepository,
+  type TransactionManager,
 } from '@levity/persistence';
 
 export class MembersService {
   constructor(
     private readonly memberRepository: WorkspaceMemberRepository,
     private readonly inviteRepository: WorkspaceInviteRepository,
+    private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
   ) {}
 
@@ -55,13 +57,18 @@ export class MembersService {
   }
 
   async acceptInvite(userId: string, token: string): Promise<WorkspaceMemberResponse> {
-    const invite = await this.inviteRepository.consume(token);
+    const member = await this.transactionManager.runInTransaction(async (manager) => {
+      const inviteRepository = new WorkspaceInviteRepository(manager.getRepository(WorkspaceInvite));
+      const memberRepository = new WorkspaceMemberRepository(manager.getRepository(WorkspaceMember));
+      const invite = await inviteRepository.consume(token);
 
-    const existing = await this.memberRepository.findByUserAndWorkspace(userId, invite.workspace_id);
-    if (existing) throw new ConflictError('Already a member of this workspace');
+      const existing = await memberRepository.findByUserAndWorkspace(userId, invite.workspace_id);
+      if (existing) throw new ConflictError('Already a member of this workspace');
 
-    const member = await this.memberRepository.add(invite.workspace_id, userId, invite.role);
-    this.logger.info({ userId, workspaceId: invite.workspace_id }, 'User joined workspace');
+      return memberRepository.add(invite.workspace_id, userId, invite.role);
+    });
+
+    this.logger.info({ userId, workspaceId: member.workspace_id }, 'User joined workspace');
     return toMemberResponse(member);
   }
 

@@ -1,8 +1,17 @@
 import { z } from 'zod';
 import { NotificationType } from '../shared/notification-type.enum';
 
+const booleanQuerySchema = z.preprocess((value) => {
+  if (typeof value === 'string') {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+  }
+  return value;
+}, z.boolean());
+
 export const queryNotificationsSchema = z.object({
-  read: z.coerce.boolean().optional(),
+  read: booleanQuerySchema.optional(),
+  cursor: z.string().datetime().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(50).default(20),
 });

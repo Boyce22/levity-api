@@ -7,6 +7,14 @@ export class S3Provider implements IStorageProvider {
     throw new ExternalServiceError('s3', 'S3Provider.upload not implemented');
   }
 
+  async download(_key: string): Promise<{ data: Buffer; mimeType: string }> {
+    throw new ExternalServiceError('s3', 'S3Provider.download not implemented');
+  }
+
+  async getSignedUrl(_key: string, _expiresInSeconds: number): Promise<string> {
+    throw new ExternalServiceError('s3', 'S3Provider.getSignedUrl not implemented');
+  }
+
   async delete(_key: string): Promise<void> {
     throw new ExternalServiceError('s3', 'S3Provider.delete not implemented');
   }

@@ -14,13 +14,20 @@ export class UserRepository {
     return this.repository.findOne({ where: { username } });
   }
 
-  async findByWorkspace(workspaceId: string): Promise<User[]> {
-    return this.repository
+  async findByWorkspace(workspaceId: string, search?: string): Promise<User[]> {
+    const query = this.repository
       .createQueryBuilder('user')
       .select(['user.id', 'user.username', 'user.display_name', 'user.avatar_url'])
       .innerJoin('workspace_members', 'wm', 'wm.user_id = user.id')
-      .where('wm.workspace_id = :workspaceId', { workspaceId })
-      .getMany();
+      .where('wm.workspace_id = :workspaceId', { workspaceId });
+
+    if (search) {
+      query.andWhere('(user.username ILIKE :search OR user.display_name ILIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    return query.getMany();
   }
 
   async create(data: { username: string; password: string; email?: string }): Promise<User> {

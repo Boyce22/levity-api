@@ -30,7 +30,7 @@ export type CreateCardInput = z.infer<typeof createCardSchema>;
 export const updateCardSchema = z.object({
   content: z.string().min(1).max(500).optional(),
   description: z.string().max(10000).nullable().optional(),
-  cover_url: z.string().url().nullable().optional(),
+  cover_url: z.string().max(2048).nullable().optional(),
   assignee_id: z.uuid().nullable().optional(),
   priority: z.string().nullable().optional(),
   label: z.string().nullable().optional(),
@@ -38,6 +38,8 @@ export const updateCardSchema = z.object({
   due_date: z.string().datetime().nullable().optional(),
   list_id: z.uuid().optional(),
   position: z.number().optional(),
+  story_points: z.number().int().min(0).nullable().optional(),
+  estimated_hours: z.number().positive().nullable().optional(),
 });
 export type UpdateCardInput = z.infer<typeof updateCardSchema>;
 

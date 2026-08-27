@@ -1,12 +1,21 @@
 import type { Logger } from 'pino';
 import { Role, type WorkspaceResponse, type WorkspaceInviteResponse } from '@levity/domain';
-import type { Workspace, WorkspaceInvite, WorkspaceRepository, WorkspaceMemberRepository, WorkspaceInviteRepository } from '@levity/persistence';
+import {
+  Workspace,
+  WorkspaceMember,
+  WorkspaceRepository,
+  WorkspaceMemberRepository,
+  type WorkspaceInvite,
+  type WorkspaceInviteRepository,
+  type TransactionManager,
+} from '@levity/persistence';
 
 export class WorkspaceService {
   constructor(
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly memberRepository: WorkspaceMemberRepository,
     private readonly inviteRepository: WorkspaceInviteRepository,
+    private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
   ) {}
 
@@ -16,8 +25,14 @@ export class WorkspaceService {
   }
 
   async create(userId: string, name: string): Promise<WorkspaceResponse> {
-    const workspace = await this.workspaceRepository.create(name, userId);
-    await this.memberRepository.add(workspace.id, userId, Role.OWNER);
+    const workspace = await this.transactionManager.runInTransaction(async (manager) => {
+      const workspaceRepository = new WorkspaceRepository(manager.getRepository(Workspace));
+      const memberRepository = new WorkspaceMemberRepository(manager.getRepository(WorkspaceMember));
+      const createdWorkspace = await workspaceRepository.create(name, userId);
+      await memberRepository.add(createdWorkspace.id, userId, Role.OWNER);
+      return createdWorkspace;
+    });
+
     this.logger.info({ workspaceId: workspace.id, userId }, 'Workspace created');
     return toWorkspaceResponse(workspace);
   }

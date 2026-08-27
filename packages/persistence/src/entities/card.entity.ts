@@ -41,6 +41,15 @@ export class Card {
   @Column({ type: 'uuid' })
   list_id!: string;
 
+  @Column({ type: 'int', nullable: true })
+  story_points?: number;
+
+  @Column({ type: 'float', nullable: true })
+  estimated_hours?: number;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  deleted_at?: Date;
+
   @Column({ type: 'uuid' })
   created_by!: string;
 

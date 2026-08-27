@@ -82,4 +82,6 @@ export interface CardResponse {
   created_by: string;
   created_at: string;
   comment_count: number;
+  story_points?: number;
+  estimated_hours?: number;
 }

@@ -3,6 +3,8 @@ import { createLogger, type Logger } from '@levity/observability';
 import {
   AppDataSource,
   Card,
+  CardHistory,
+  CardHistoryRepository,
   CardRepository,
   Comment,
   CommentRepository,
@@ -12,6 +14,10 @@ import {
   ListRepository,
   Notification,
   NotificationRepository,
+  Sprint,
+  SprintCard,
+  SprintRepository,
+  TransactionManager,
   User,
   UserRepository,
   Workspace,
@@ -33,6 +39,7 @@ import {
   MembersService,
   NotificationsService,
   SettingsService,
+  SprintService,
   UsersService,
   WorkspaceService,
 } from '@levity/application';
@@ -46,6 +53,7 @@ import { workspaceRoutes } from './modules/workspaces/workspace.controller';
 import { membersRoutes } from './modules/workspaces/members.controller';
 import { settingsRoutes } from './modules/workspaces/settings.controller';
 import { boardRoutes } from './modules/boards/board.controller';
+import { sprintRoutes } from './modules/sprints/sprint.controller';
 import { commentsRoutes } from './modules/comments/comments.controller';
 import { notificationsRoutes } from './modules/notifications/notifications.controller';
 import { diagramsRoutes } from './modules/diagrams/diagrams.controller';
@@ -62,6 +70,7 @@ export interface ApiContainer {
     members: RoutePlugin;
     settings: RoutePlugin;
     board: RoutePlugin;
+    sprints: RoutePlugin;
     comments: RoutePlugin;
     notifications: RoutePlugin;
     diagrams: RoutePlugin;
@@ -76,6 +85,7 @@ export function createApiContainer(): ApiContainer {
     pretty: env.NODE_ENV !== 'production',
   });
 
+  const transactionManager = new TransactionManager();
   const userRepository = new UserRepository(AppDataSource.getRepository(User));
   const workspaceRepository = new WorkspaceRepository(AppDataSource.getRepository(Workspace));
   const memberRepository = new WorkspaceMemberRepository(AppDataSource.getRepository(WorkspaceMember));
@@ -84,9 +94,14 @@ export function createApiContainer(): ApiContainer {
   const priorityRepository = new WorkspacePriorityRepository(AppDataSource.getRepository(WorkspacePriority));
   const listRepository = new ListRepository(AppDataSource.getRepository(List));
   const cardRepository = new CardRepository(AppDataSource.getRepository(Card));
+  const cardHistoryRepository = new CardHistoryRepository(AppDataSource.getRepository(CardHistory));
   const commentRepository = new CommentRepository(AppDataSource.getRepository(Comment));
   const notificationRepository = new NotificationRepository(AppDataSource.getRepository(Notification));
   const diagramRepository = new DiagramRepository(AppDataSource.getRepository(Diagram));
+  const sprintRepository = new SprintRepository(
+    AppDataSource.getRepository(Sprint),
+    AppDataSource.getRepository(SprintCard),
+  );
 
   const authService = new AuthService(
     userRepository,
@@ -96,16 +111,24 @@ export function createApiContainer(): ApiContainer {
   );
   const authenticate: PreHandler = createAuthenticate(authService);
 
-  const usersService = new UsersService(userRepository, logger.child({ name: 'users' }));
+  const filesService = new FilesService(
+    createStorageProvider(env),
+    new CompressorService(),
+    memberRepository,
+    logger.child({ name: 'files' }),
+  );
+  const usersService = new UsersService(userRepository, filesService, logger.child({ name: 'users' }));
   const workspaceService = new WorkspaceService(
     workspaceRepository,
     memberRepository,
     inviteRepository,
+    transactionManager,
     logger.child({ name: 'workspaces' }),
   );
   const membersService = new MembersService(
     memberRepository,
     inviteRepository,
+    transactionManager,
     logger.child({ name: 'members' }),
   );
   const settingsService = new SettingsService(
@@ -119,14 +142,18 @@ export function createApiContainer(): ApiContainer {
     cardRepository,
     memberRepository,
     workspaceRepository,
+    cardHistoryRepository,
+    filesService,
+    transactionManager,
     logger.child({ name: 'boards' }),
   );
+  const sprintService = new SprintService(sprintRepository, memberRepository);
   const commentsService = new CommentsService(
     commentRepository,
     cardRepository,
     listRepository,
     memberRepository,
-    notificationRepository,
+    transactionManager,
     logger.child({ name: 'comments' }),
   );
   const notificationsService = new NotificationsService(notificationRepository);
@@ -135,12 +162,6 @@ export function createApiContainer(): ApiContainer {
     cardRepository,
     listRepository,
     memberRepository,
-  );
-  const filesService = new FilesService(
-    createStorageProvider(env),
-    new CompressorService(),
-    memberRepository,
-    logger.child({ name: 'files' }),
   );
 
   return {
@@ -152,6 +173,7 @@ export function createApiContainer(): ApiContainer {
       members: membersRoutes(membersService, authenticate),
       settings: settingsRoutes(settingsService, authenticate),
       board: boardRoutes(boardService, authenticate),
+      sprints: sprintRoutes(sprintService, authenticate),
       comments: commentsRoutes(commentsService, authenticate),
       notifications: notificationsRoutes(notificationsService, authenticate),
       diagrams: diagramsRoutes(diagramsService, authenticate),

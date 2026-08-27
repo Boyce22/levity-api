@@ -7,13 +7,15 @@ import {
   type CommentResponse,
 } from '@levity/domain';
 import { NotFoundError } from '@levity/observability';
-import type {
+import {
   Comment,
   CommentRepository,
-  CardRepository,
-  ListRepository,
-  WorkspaceMemberRepository,
+  Notification,
   NotificationRepository,
+  type CardRepository,
+  type ListRepository,
+  type WorkspaceMemberRepository,
+  type TransactionManager,
 } from '@levity/persistence';
 
 const MENTION_REGEX = /@(\w+)/g;
@@ -24,7 +26,7 @@ export class CommentsService {
     private readonly cardRepository: CardRepository,
     private readonly listRepository: ListRepository,
     private readonly memberRepository: WorkspaceMemberRepository,
-    private readonly notificationRepository: NotificationRepository,
+    private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
   ) {}
 
@@ -57,27 +59,33 @@ export class CommentsService {
     const list = await this.listRepository.findByIdOrFail(card.list_id);
     await this.memberRepository.assertMember(userId, list.workspace_id);
 
-    const comment = await this.commentRepository.create(userId, input);
+    const comment = await this.transactionManager.runInTransaction(async (manager) => {
+      const commentRepository = new CommentRepository(manager.getRepository(Comment));
+      const notificationRepository = new NotificationRepository(manager.getRepository(Notification));
+      const createdComment = await commentRepository.create(userId, input);
 
-    const mentions = [...input.content.matchAll(MENTION_REGEX)].map((m) => m[1]);
-    if (mentions.length) {
-      await this.notifyMentions(userId, card.id, comment.id, mentions, input.content, list.workspace_id);
-    }
-
-    if (input.parent_id) {
-      const parent = await this.commentRepository.findById(input.parent_id);
-      if (parent && parent.created_by !== userId) {
-        await this.notificationRepository.createMany([
-          {
-            user_id: parent.created_by,
-            actor_id: userId,
-            card_id: card.id,
-            type: NotificationType.REPLY,
-            content: input.content.slice(0, 100),
-          },
-        ]);
+      const mentions = [...input.content.matchAll(MENTION_REGEX)].map((m) => m[1]);
+      if (mentions.length) {
+        await this.notifyMentions(userId, card.id, createdComment.id, mentions, input.content, list.workspace_id);
       }
-    }
+
+      if (input.parent_id) {
+        const parent = await commentRepository.findById(input.parent_id);
+        if (parent && parent.created_by !== userId) {
+          await notificationRepository.createMany([
+            {
+              user_id: parent.created_by,
+              actor_id: userId,
+              card_id: card.id,
+              type: NotificationType.REPLY,
+              content: input.content.slice(0, 100),
+            },
+          ]);
+        }
+      }
+
+      return createdComment;
+    });
 
     this.logger.info({ commentId: comment.id, cardId: card.id }, 'Comment created');
     return toCommentResponse(comment);

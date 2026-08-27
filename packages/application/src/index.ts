@@ -7,4 +7,5 @@ export { CommentsService } from './comments/comments.service';
 export { NotificationsService } from './notifications/notifications.service';
 export { DiagramsService } from './diagrams/diagrams.service';
 export { FilesService } from './files/files.service';
+export { SprintService } from './sprints/sprint.service';
 export type { StoragePort, CompressorPort, CompressOptions } from './files/storage.port';

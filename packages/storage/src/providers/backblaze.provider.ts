@@ -1,5 +1,6 @@
 import Backblaze from 'backblaze-b2';
 import type { UploadResult } from '@levity/domain';
+import { ExternalServiceError } from '@levity/observability';
 import type { IStorageProvider } from '../interfaces/storage.interface';
 
 export interface BackblazeCredentials {
@@ -7,11 +8,13 @@ export interface BackblazeCredentials {
   applicationKey: string;
   bucketId: string;
   bucketName: string;
+  downloadUrl?: string;
 }
 
 export class BackblazeProvider implements IStorageProvider {
   private readonly b2: InstanceType<typeof Backblaze>;
   private authorized = false;
+  private downloadUrl?: string;
 
   constructor(private readonly credentials: BackblazeCredentials) {
     this.b2 = new Backblaze({
@@ -22,7 +25,8 @@ export class BackblazeProvider implements IStorageProvider {
 
   private async authorize(): Promise<void> {
     if (!this.authorized) {
-      await this.b2.authorize();
+      const { data } = await this.b2.authorize();
+      this.downloadUrl = this.credentials.downloadUrl ?? data.downloadUrl;
       this.authorized = true;
     }
   }
@@ -41,9 +45,34 @@ export class BackblazeProvider implements IStorageProvider {
       onUploadProgress: null,
     });
 
-    const url = `/file/${this.credentials.bucketName}/${key}`;
+    return { url: key, publicId: data.fileId };
+  }
 
-    return { url, publicId: data.fileId };
+  async download(key: string): Promise<{ data: Buffer; mimeType: string }> {
+    await this.authorize();
+
+    const { data, headers } = await this.b2.downloadFileByName({
+      bucketName: this.credentials.bucketName,
+      fileName: key,
+    });
+
+    return { data: Buffer.from(data), mimeType: headers['content-type'] };
+  }
+
+  async getSignedUrl(key: string, expiresInSeconds: number): Promise<string> {
+    await this.authorize();
+
+    if (!this.downloadUrl) {
+      throw new ExternalServiceError('backblaze', 'Download URL not available');
+    }
+
+    const { data } = await this.b2.getDownloadAuthorization({
+      bucketId: this.credentials.bucketId,
+      fileNamePrefix: key,
+      validDurationInSeconds: expiresInSeconds,
+    });
+
+    return `${this.downloadUrl}/file/${this.credentials.bucketName}/${key}?Authorization=${data.authorizationToken}`;
   }
 
   async delete(key: string): Promise<void> {
