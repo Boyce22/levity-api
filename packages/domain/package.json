@@ -1,0 +1,19 @@
+{
+  "name": "@levity/domain",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pure domain model: enums, Zod schemas and DTOs.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "node --test --require ts-node/register src/auth/schemas.test.ts src/shared/pagination.schema.test.ts"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}

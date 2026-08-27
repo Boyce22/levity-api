@@ -1,0 +1,37 @@
+{
+  "name": "@levity/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fastify HTTP API runtime.",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "start": "node dist/main.js",
+    "dev": "tsc -b && node --enable-source-maps --watch dist/main.js",
+    "test": "node --test --require ts-node/register src/modules/auth/auth.middleware.test.ts"
+  },
+  "dependencies": {
+    "@fastify/compress": "^8.3.1",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/multipart": "^9.4.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@levity/application": "1.0.0",
+    "@levity/config": "1.0.0",
+    "@levity/domain": "1.0.0",
+    "@levity/observability": "1.0.0",
+    "@levity/persistence": "1.0.0",
+    "@levity/storage": "1.0.0",
+    "bcryptjs": "^3.0.3",
+    "fastify": "^5.8.5",
+    "jsonwebtoken": "^9.0.3",
+    "pino": "^10.3.1",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "ts-node": "^10.9.2"
+  }
+}

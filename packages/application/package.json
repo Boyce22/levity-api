@@ -1,0 +1,18 @@
+{
+  "name": "@levity/application",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Business services shared by the API runtime.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean"
+  },
+  "dependencies": {
+    "@levity/domain": "1.0.0",
+    "@levity/observability": "1.0.0",
+    "@levity/persistence": "1.0.0",
+    "pino": "^10.3.1"
+  }
+}

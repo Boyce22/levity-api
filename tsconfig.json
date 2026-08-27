@@ -1,23 +1,12 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "paths": {
-      "@/*": ["./src/*"],
-      "@config": ["./src/config/index.ts"],
-      "@errors": ["./src/shared/errors/index.ts"],
-      "@security": ["./src/shared/security/index.ts"],
-      "@utils": ["./src/shared/utils/index.ts"],
-      "@middlewares": ["./src/shared/middlewares/index.ts"]
-    }
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "files": [],
+  "references": [
+    { "path": "./packages/domain" },
+    { "path": "./packages/config" },
+    { "path": "./packages/observability" },
+    { "path": "./packages/persistence" },
+    { "path": "./packages/application" },
+    { "path": "./packages/storage" },
+    { "path": "./apps/api" }
+  ]
 }
