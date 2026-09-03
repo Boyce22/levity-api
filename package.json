@@ -4,7 +4,7 @@
   "description": "Levity backend API",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "api"
   ],
   "scripts": {
     "build": "tsc -b",
