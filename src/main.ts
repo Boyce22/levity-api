@@ -27,6 +27,10 @@ async function startApi(): Promise<void> {
       await app.close();
       await container.close();
     });
+
+    await app.ready();
+    app.swagger();
+    
   } catch (err) {
     await lifecycle.handleStartupFailure(err);
   }

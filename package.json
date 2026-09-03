@@ -28,6 +28,8 @@
     "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^9.4.0",
     "@fastify/rate-limit": "^10.3.0",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
     "backblaze-b2": "^1.7.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.0",
