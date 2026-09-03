@@ -36,3 +36,6 @@ export { NotificationRepository } from './repositories/notification.repository';
 export { DiagramRepository } from './repositories/diagram.repository';
 export { SprintRepository } from './repositories/sprint.repository';
 export { TransactionManager } from './transaction-manager';
+export { InitialSchema1724700000000 } from './migrations/1724700000000-InitialSchema';
+export { AddScalabilityIndexes1760580000000 } from './migrations/1760580000000-AddScalabilityIndexes';
+export { AddSprints1760580000001 } from './migrations/1760580000001-AddSprints';

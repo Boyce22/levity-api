@@ -7,8 +7,8 @@ import multipart from '@fastify/multipart';
 
 import { env } from '@levity/config';
 import { MAX_IMAGE_SIZE_BYTES } from '@levity/domain';
-import type { ApiContainer } from './composition-root';
-import { createErrorHandler } from './middlewares';
+import type { ApiContainer } from './composition';
+import { createErrorHandler } from './lib/http';
 import { buildRoutes } from './routes';
 
 export async function buildApp(container: ApiContainer): Promise<FastifyInstance> {

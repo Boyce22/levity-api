@@ -2,9 +2,9 @@ import 'reflect-metadata';
 
 import { env } from '@levity/config';
 import { createProcessLifecycle } from '@levity/observability';
-import { AppDataSource } from '@levity/persistence';
+import { AppDataSource } from './db/data-source';
 import { buildApp } from './app';
-import { createApiContainer } from './composition-root';
+import { createApiContainer } from './composition';
 
 const PROCESS_NAME = 'api';
 

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { ApiContainer } from '../composition-root';
+import type { ApiContainer } from '../composition';
 
 export function buildRoutes(container: ApiContainer) {
   const { plugins } = container;

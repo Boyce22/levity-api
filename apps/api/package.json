@@ -9,7 +9,7 @@
     "clean": "tsc -b --clean",
     "start": "node dist/main.js",
     "dev": "tsc -b && node --enable-source-maps --watch dist/main.js",
-    "test": "node --test --require ts-node/register src/modules/auth/auth.middleware.test.ts"
+    "test": "node --test --require ts-node/register src/auth/middleware.test.ts"
   },
   "dependencies": {
     "@fastify/compress": "^8.3.1",
