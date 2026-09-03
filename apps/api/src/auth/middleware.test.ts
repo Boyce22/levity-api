@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import jwt from 'jsonwebtoken';
-import { UnauthorizedError } from '@levity/observability';
+import { UnauthorizedError } from '../observability';
 import { type AuthService } from './service';
 import { createAuthenticate } from './middleware';
 

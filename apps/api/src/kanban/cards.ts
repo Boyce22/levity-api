@@ -1,1 +1,1 @@
-export { CardRepository, CardHistoryRepository } from '@levity/persistence';
+export { CardRepository, CardHistoryRepository } from '../db';

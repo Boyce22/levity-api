@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { updateUserSchema, queryUsersSchema } from '@levity/domain';
+import { updateUserSchema, queryUsersSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { UsersService } from '@levity/application';
+import type { UsersService } from './service';
 import type { PreHandler } from '../auth/middleware';
 
 export function usersRoutes(service: UsersService, authenticate: PreHandler) {

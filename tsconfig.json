@@ -1,12 +1,6 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/domain" },
-    { "path": "./packages/config" },
-    { "path": "./packages/observability" },
-    { "path": "./packages/persistence" },
-    { "path": "./packages/application" },
-    { "path": "./packages/storage" },
     { "path": "./apps/api" }
   ]
 }

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { createTagSchema, createPrioritySchema } from '@levity/domain';
+import { createTagSchema, createPrioritySchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { SettingsService } from '@levity/application';
+import type { SettingsService } from './settings';
 import type { PreHandler } from '../auth/middleware';
 
 export function settingsRoutes(service: SettingsService, authenticate: PreHandler) {

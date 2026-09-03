@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { createCommentSchema, updateCommentSchema, queryCommentsSchema } from '@levity/domain';
+import { createCommentSchema, updateCommentSchema, queryCommentsSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { CommentsService } from '@levity/application';
+import type { CommentsService } from './comments';
 import type { PreHandler } from '../auth/middleware';
 
 export function commentsRoutes(service: CommentsService, authenticate: PreHandler) {

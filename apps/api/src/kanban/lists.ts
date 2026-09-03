@@ -1,1 +1,1 @@
-export { ListRepository } from '@levity/persistence';
+export { ListRepository } from '../db';

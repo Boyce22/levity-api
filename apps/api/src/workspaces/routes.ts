@@ -1,7 +1,8 @@
 import type { FastifyInstance } from 'fastify';
-import { createWorkspaceSchema, renameWorkspaceSchema, generateInviteSchema } from '@levity/domain';
+import { createWorkspaceSchema, renameWorkspaceSchema, generateInviteSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { MembersService, WorkspaceService } from '@levity/application';
+import type { MembersService } from './members';
+import type { WorkspaceService } from './workspace';
 import type { PreHandler } from '../auth/middleware';
 
 export function workspaceRoutes(

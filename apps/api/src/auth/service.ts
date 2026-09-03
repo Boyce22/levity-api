@@ -1,9 +1,9 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import type { Logger } from 'pino';
-import type { AuthTokens } from '@levity/domain';
-import { UnauthorizedError } from '@levity/observability';
-import type { UserRepository } from '@levity/persistence';
+import type { AuthTokens } from '../domain';
+import { UnauthorizedError } from '../observability';
+import type { UserRepository } from '../db';
 
 export class AuthService {
   constructor(

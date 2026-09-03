@@ -1,8 +1,8 @@
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
-import type { Logger } from '@levity/observability';
-import { AppError } from '@levity/observability';
+import type { Logger } from '../observability';
+import { AppError } from '../observability';
 
-export * from '@levity/observability';
+export * from '../observability';
 
 export type ErrorHandler = (
   err: FastifyError | Error,

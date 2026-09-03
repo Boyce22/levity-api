@@ -5,10 +5,10 @@ import {
   fileRouteParamsSchema,
   uploadAttachmentSchema,
   type UploadedFile,
-} from '@levity/domain';
-import { BadRequestError } from '@levity/observability';
+} from '../domain';
+import { BadRequestError } from '../observability';
 import { validateDto } from '../lib/http';
-import type { FilesService } from '@levity/application';
+import type { FilesService } from './service';
 import type { PreHandler } from '../auth/middleware';
 
 function multipartField(

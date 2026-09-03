@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
-export { validateDto } from '@levity/observability';
+export { validateDto } from '../observability';
 export { createErrorHandler, type ErrorHandler } from './errors';
 
 export type ApiPlugin = FastifyPluginAsync;

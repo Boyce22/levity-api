@@ -1,5 +1,5 @@
-import { env } from '@levity/config';
-import { createLogger, type Logger } from '@levity/observability';
+import { env } from './config';
+import { createLogger, type Logger } from './observability';
 import {
   Card,
   CardHistory,
@@ -29,12 +29,12 @@ import {
   WorkspaceRepository,
   WorkspaceTag,
   WorkspaceTagRepository,
-} from '@levity/persistence';
+} from './db';
 import { AppDataSource } from './db/data-source';
 import {
   CompressorService,
   createStorageProvider,
-} from '@levity/storage';
+} from './files/storage';
 import { UsersService } from './users/service';
 import { WorkspaceService } from './workspaces/workspace';
 import { MembersService } from './workspaces/members';

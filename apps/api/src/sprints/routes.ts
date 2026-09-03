@@ -5,9 +5,9 @@ import {
   completeSprintSchema,
   addCardToSprintSchema,
   reorderSprintCardsSchema,
-} from '@levity/domain';
+} from '../domain';
 import { validateDto } from '../lib/http';
-import type { SprintService } from '@levity/application';
+import type { SprintService } from './service';
 import type { PreHandler } from '../auth/middleware';
 
 export function sprintRoutes(service: SprintService, authenticate: PreHandler) {

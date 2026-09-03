@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { saveDiagramSchema } from '@levity/domain';
+import { saveDiagramSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { DiagramsService } from '@levity/application';
+import type { DiagramsService } from './diagrams';
 import type { PreHandler } from '../auth/middleware';
 
 export function diagramsRoutes(service: DiagramsService, authenticate: PreHandler) {

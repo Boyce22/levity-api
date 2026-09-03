@@ -6,9 +6,9 @@ import {
   createCardSchema,
   updateCardSchema,
   updateCardPositionsSchema,
-} from '@levity/domain';
+} from '../domain';
 import { validateDto } from '../lib/http';
-import type { BoardService } from '@levity/application';
+import type { BoardService } from './board';
 import type { PreHandler } from '../auth/middleware';
 
 export function boardRoutes(service: BoardService, authenticate: PreHandler) {

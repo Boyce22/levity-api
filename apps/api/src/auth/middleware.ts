@@ -1,7 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { TokenExpiredError } from 'jsonwebtoken';
-import type { AuthPayload } from '@levity/domain';
-import { UnauthorizedError } from '@levity/observability';
+import type { AuthPayload } from '../domain';
+import { UnauthorizedError } from '../observability';
 import type { AuthService } from './service';
 
 declare module 'fastify' {

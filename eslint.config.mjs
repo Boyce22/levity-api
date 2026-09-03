@@ -7,7 +7,7 @@ export default tseslint.config(
     ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'],
   },
   {
-    files: ['apps/**/*.ts', 'packages/**/*.ts'],
+    files: ['apps/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2020,
@@ -27,7 +27,7 @@ export default tseslint.config(
         'warn',
         {
           selector: "NewExpression[callee.name='Error']",
-          message: 'Prefer typed errors from @levity/observability over bare Error.',
+          message: 'Prefer typed application errors over bare Error.',
         },
       ],
     },

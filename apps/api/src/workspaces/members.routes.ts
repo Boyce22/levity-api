@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { updateMemberRoleSchema } from '@levity/domain';
+import { updateMemberRoleSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { MembersService } from '@levity/application';
+import type { MembersService } from './members';
 import type { PreHandler } from '../auth/middleware';
 
 export function membersRoutes(service: MembersService, authenticate: PreHandler) {

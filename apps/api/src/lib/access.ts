@@ -1,5 +1,5 @@
-import type { Role } from '@levity/domain';
-import type { WorkspaceMember, WorkspaceMemberRepository } from '@levity/persistence';
+import type { Role } from '../domain';
+import type { WorkspaceMember, WorkspaceMemberRepository } from '../db';
 
 export function assertMember(
   members: WorkspaceMemberRepository,

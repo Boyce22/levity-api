@@ -4,7 +4,6 @@
   "description": "Levity backend API",
   "private": true,
   "workspaces": [
-    "packages/*",
     "apps/*"
   ],
   "scripts": {
@@ -16,9 +15,9 @@
     "test": "npm run test --workspaces --if-present",
     "start:api": "npm run start -w @levity/api",
     "dev:api": "npm run dev -w @levity/api",
-    "migration:generate": "npm run migration:generate -w @levity/persistence",
-    "migration:run": "npm run migration:run -w @levity/persistence",
-    "migration:revert": "npm run migration:revert -w @levity/persistence"
+    "migration:generate": "npm run migration:generate -w @levity/api",
+    "migration:run": "npm run migration:run -w @levity/api",
+    "migration:revert": "npm run migration:revert -w @levity/api"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

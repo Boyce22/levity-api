@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { queryNotificationsSchema } from '@levity/domain';
+import { queryNotificationsSchema } from '../domain';
 import { validateDto } from '../lib/http';
-import type { NotificationsService } from '@levity/application';
+import type { NotificationsService } from './service';
 import type { PreHandler } from '../auth/middleware';
 
 export function notificationsRoutes(service: NotificationsService, authenticate: PreHandler) {

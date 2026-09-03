@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { loginSchema, registerSchema } from '@levity/domain';
+import { loginSchema, registerSchema } from '../domain';
 import { validateDto } from '../lib/http';
 import type { AuthService } from './service';
 

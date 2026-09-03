@@ -1,1 +1,10 @@
-export { TransactionManager } from '@levity/persistence';
+import type { EntityManager } from 'typeorm';
+import { AppDataSource } from '../db/data-source';
+
+export class TransactionManager {
+  constructor(private readonly dataSource = AppDataSource) {}
+
+  runInTransaction<T>(work: (manager: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(work);
+  }
+}

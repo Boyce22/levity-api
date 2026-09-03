@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
-import { env } from '@levity/config';
-import { createProcessLifecycle } from '@levity/observability';
+import { env } from './config';
+import { createProcessLifecycle } from './observability';
 import { AppDataSource } from './db/data-source';
 import { buildApp } from './app';
 import { createApiContainer } from './composition';

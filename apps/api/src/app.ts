@@ -5,8 +5,8 @@ import compress from '@fastify/compress';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 
-import { env } from '@levity/config';
-import { MAX_IMAGE_SIZE_BYTES } from '@levity/domain';
+import { env } from './config';
+import { MAX_IMAGE_SIZE_BYTES } from './domain';
 import type { ApiContainer } from './composition';
 import { createErrorHandler } from './lib/http';
 import { buildRoutes } from './routes';
