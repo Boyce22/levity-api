@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import path from 'path';
 import type { Logger } from 'pino';
-import type { UploadResult, UploadedFile } from '../../domain/index';
+import type { UploadResult, UploadedFile } from '../../contracts/index';
 import { BadRequestError } from '../../shared/index';
 import type { WorkspaceMemberRepository } from '../../db/index';
 import type { CompressorPort, StoragePort } from './storage.port';

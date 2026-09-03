@@ -11,7 +11,7 @@ export class Card {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
-  @Column()
+  @Column({ type: 'varchar' })
   content!: string;
 
   @Column({ type: 'float', default: 0 })
@@ -20,16 +20,16 @@ export class Card {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   cover_url?: string;
 
   @Column({ type: 'uuid', nullable: true })
   assignee_id?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   priority?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   label?: string;
 
   @Column({ type: 'int', nullable: true, default: 0 })

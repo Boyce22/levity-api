@@ -11,10 +11,10 @@ export class WorkspaceTag {
   @Column({ type: 'uuid' })
   workspace_id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   color!: string;
 
   @CreateDateColumn({ type: 'timestamptz' })

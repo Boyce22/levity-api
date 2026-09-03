@@ -3,6 +3,7 @@ export * from './shared/list-type.enum';
 export * from './shared/notification-type.enum';
 export * from './shared/api-response.interface';
 export * from './shared/pagination.schema';
+export * from './shared/route-params.schema';
 
 export * from './auth/schemas';
 export * from './auth/dtos';

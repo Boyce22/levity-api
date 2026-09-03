@@ -1,5 +1,5 @@
 import type { Logger } from 'pino';
-import type { UpdateUserInput, UserResponse, UserPublicResponse } from '../../domain/index';
+import type { UpdateUserInput, UserResponse, UserPublicResponse } from '../../contracts/index';
 import type { User, UserRepository } from '../../db/index';
 import type { FilesService } from '../files/files.service';
 

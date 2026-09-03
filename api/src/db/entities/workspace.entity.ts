@@ -10,7 +10,7 @@ export class Workspace {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
   @Column({ type: 'uuid' })

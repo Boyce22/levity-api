@@ -5,7 +5,7 @@ import {
   type QueryCommentsInput,
   type UpdateCommentInput,
   type CommentResponse,
-} from '../../domain/index';
+} from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import {
   Comment,

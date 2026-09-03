@@ -1,4 +1,4 @@
-import type { SaveDiagramInput, DiagramResponse } from '../../domain/index';
+import type { SaveDiagramInput, DiagramResponse } from '../../contracts/index';
 import type {
   Diagram,
   DiagramRepository,

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { queryNotificationsSchema } from '../../domain';
+import { queryNotificationsSchema, idParamsSchema } from '../../contracts';
 import { validateDto } from '../../shared/http';
 import type { NotificationsService } from './notifications.service';
 import type { PreHandler } from '../auth/auth.middleware';
@@ -12,7 +12,7 @@ export function notificationsRoutes(service: NotificationsService, authenticate:
     });
 
     fastify.patch('/:id/read', { preHandler: [authenticate] }, async (request, reply) => {
-      const { id } = request.params as { id: string };
+      const { id } = validateDto(idParamsSchema, request.params);
       await service.markRead(request.user.id, id);
       reply.status(204).send();
     });

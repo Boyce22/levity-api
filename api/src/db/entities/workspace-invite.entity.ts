@@ -1,6 +1,6 @@
 import { Entity, Column, ManyToOne, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { Role } from '../../domain/index';
+import { Role } from '../../contracts/index';
 import { Workspace } from './workspace.entity';
 
 @Entity('workspace_invites')

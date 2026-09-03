@@ -7,10 +7,10 @@
     "api"
   ],
   "scripts": {
-    "build": "tsc -b",
-    "build:clean": "tsc -b --clean",
-    "rebuild": "tsc -b --clean && tsc -b",
-    "typecheck": "tsc -b",
+    "build": "npm run build -w @levity/api",
+    "build:clean": "npm run clean -w @levity/api",
+    "rebuild": "npm run clean -w @levity/api && npm run build -w @levity/api",
+    "typecheck": "npm run typecheck -w @levity/api",
     "lint": "eslint .",
     "test": "npm run test --workspaces --if-present",
     "start:api": "npm run start -w @levity/api",

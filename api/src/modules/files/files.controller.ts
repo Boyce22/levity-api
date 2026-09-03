@@ -5,7 +5,7 @@ import {
   fileRouteParamsSchema,
   uploadAttachmentSchema,
   type UploadedFile,
-} from '../../domain';
+} from '../../contracts';
 import { BadRequestError } from '../../shared';
 import { validateDto } from '../../shared/http';
 import type { FilesService } from './files.service';

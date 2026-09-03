@@ -1,4 +1,4 @@
-import type { QueryNotificationsInput, NotificationResponse, PaginatedResponse } from '../../domain/index';
+import type { QueryNotificationsInput, NotificationResponse, PaginatedResponse } from '../../contracts/index';
 import type { Notification, NotificationRepository } from '../../db/index';
 
 export class NotificationsService {

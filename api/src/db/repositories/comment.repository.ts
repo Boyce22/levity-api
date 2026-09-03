@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { CreateCommentInput, QueryCommentsInput } from '../../domain/index';
+import type { CreateCommentInput, QueryCommentsInput } from '../../contracts/index';
 import { NotFoundError, ForbiddenError } from '../../shared/index';
 import { type Comment } from '../entities/comment.entity';
 

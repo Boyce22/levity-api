@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { UpdateUserInput } from '../../domain/index';
+import type { UpdateUserInput } from '../../contracts/index';
 import { NotFoundError, ConflictError } from '../../shared/index';
 import { type User } from '../entities/user.entity';
 

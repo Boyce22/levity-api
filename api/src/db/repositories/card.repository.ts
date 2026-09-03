@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { CreateCardInput, UpdateCardInput, UpdateCardPositionsInput } from '../../domain/index';
+import type { CreateCardInput, UpdateCardInput, UpdateCardPositionsInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Card } from '../entities/card.entity';
 

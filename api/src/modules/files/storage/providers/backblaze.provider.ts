@@ -1,5 +1,5 @@
 import Backblaze from 'backblaze-b2';
-import type { UploadResult } from '../../../../domain/index';
+import type { UploadResult } from '../../../../contracts/index';
 import { ExternalServiceError } from '../../../../shared/index';
 import type { StoragePort } from '../../storage.port';
 

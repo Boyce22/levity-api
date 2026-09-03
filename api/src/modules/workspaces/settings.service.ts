@@ -5,7 +5,7 @@ import {
   type CreatePriorityInput,
   type WorkspaceTagResponse,
   type WorkspacePriorityResponse,
-} from '../../domain/index';
+} from '../../contracts/index';
 import type {
   WorkspaceTag,
   WorkspacePriority,

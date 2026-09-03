@@ -11,13 +11,13 @@ export class WorkspacePriority {
   @Column({ type: 'uuid' })
   workspace_id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   color!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   icon!: string;
 
   @Column({ type: 'int', default: 0 })

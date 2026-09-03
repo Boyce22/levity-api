@@ -1,7 +1,7 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import type { Logger } from 'pino';
-import type { AuthTokens } from '../../domain';
+import type { AuthTokens } from '../../contracts';
 import { UnauthorizedError } from '../../shared';
 import type { UserRepository } from '../../db';
 

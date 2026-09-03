@@ -13,16 +13,16 @@ export class CardHistory {
   @Column({ type: 'uuid' })
   created_by!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   action_type!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   field!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   old_val?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   new_val?: string;
 
   @CreateDateColumn({ type: 'timestamptz' })

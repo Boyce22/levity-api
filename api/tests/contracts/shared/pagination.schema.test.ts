@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { paginationSchema } from '../../../src/domain/shared/pagination.schema';
+import { paginationSchema } from '../../../src/contracts/shared/pagination.schema';
 
 test('paginationSchema applies defaults', () => {
   const result = paginationSchema.parse({});

@@ -1,6 +1,6 @@
 import { Entity, Column, ManyToOne, OneToMany, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { ListType } from '../../domain/index';
+import { ListType } from '../../contracts/index';
 import { Card } from './card.entity';
 import { Workspace } from './workspace.entity';
 
@@ -9,7 +9,7 @@ export class List {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
-  @Column()
+  @Column({ type: 'varchar' })
   title!: string;
 
   @Column({ type: 'float', default: 0 })

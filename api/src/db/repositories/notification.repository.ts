@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { CreateNotificationInput, QueryNotificationsInput } from '../../domain/index';
+import type { CreateNotificationInput, QueryNotificationsInput } from '../../contracts/index';
 import { type Notification } from '../entities/notification.entity';
 
 export class NotificationRepository {

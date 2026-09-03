@@ -6,7 +6,7 @@ import type {
   ReorderSprintCardsInput,
   SprintResponse,
   SprintCardResponse,
-} from '../../domain/index';
+} from '../../contracts/index';
 import type {
   Sprint,
   SprintCard,

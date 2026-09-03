@@ -6,7 +6,7 @@ import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 
 import { env } from './config';
-import { MAX_IMAGE_SIZE_BYTES } from './domain';
+import { MAX_IMAGE_SIZE_BYTES } from './contracts';
 import type { ApiContainer } from './composition';
 import { createErrorHandler } from './shared/http';
 import { buildRoutes } from './routes';

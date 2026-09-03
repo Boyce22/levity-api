@@ -6,19 +6,19 @@ export class User {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
-  @Column({ unique: true })
+  @Column({ type: 'varchar', unique: true })
   username!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   password!: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ type: 'varchar', nullable: true, unique: true })
   email?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   display_name?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   avatar_url?: string;
 
   @Column({ type: 'text', nullable: true })

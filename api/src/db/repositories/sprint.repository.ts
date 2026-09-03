@@ -1,5 +1,5 @@
 import { IsNull, type Repository } from 'typeorm';
-import type { CreateSprintInput, UpdateSprintInput } from '../../domain/index';
+import type { CreateSprintInput, UpdateSprintInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Sprint } from '../entities/sprint.entity';
 import { type SprintCard } from '../entities/sprint-card.entity';

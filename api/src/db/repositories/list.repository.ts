@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { CreateListInput, UpdateListInput, UpdateListPositionsInput } from '../../domain/index';
+import type { CreateListInput, UpdateListInput, UpdateListPositionsInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type List } from '../entities/list.entity';
 import type { CardWithCount } from '../entities/card.entity';

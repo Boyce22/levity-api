@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loginSchema, registerSchema } from '../../../src/domain/auth/schemas';
+import { loginSchema, registerSchema } from '../../../src/contracts/auth/schemas';
 
 test('loginSchema accepts a valid payload', () => {
   const result = loginSchema.parse({ username: 'ada', password: 'secret' });

@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { TokenExpiredError } from 'jsonwebtoken';
-import type { AuthPayload } from '../../domain';
+import type { AuthPayload } from '../../contracts';
 import { UnauthorizedError } from '../../shared';
 import type { AuthService } from './auth.service';
 

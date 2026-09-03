@@ -1,4 +1,4 @@
-import type { UploadResult } from '../../domain/index';
+import type { UploadResult } from '../../contracts/index';
 
 export interface StoragePort {
   upload(buffer: Buffer, key: string, mimeType: string): Promise<UploadResult>;

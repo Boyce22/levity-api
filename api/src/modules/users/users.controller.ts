@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { updateUserSchema, queryUsersSchema } from '../../domain';
+import { updateUserSchema, queryUsersSchema } from '../../contracts';
 import { validateDto } from '../../shared/http';
 import type { UsersService } from './users.service';
 import type { PreHandler } from '../auth/auth.middleware';

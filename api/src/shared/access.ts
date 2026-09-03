@@ -1,4 +1,4 @@
-import type { Role } from '../domain';
+import type { Role } from '../contracts';
 import type { WorkspaceMember, WorkspaceMemberRepository } from '../db';
 
 export function assertMember(

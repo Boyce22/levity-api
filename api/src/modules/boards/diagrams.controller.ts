@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { saveDiagramSchema } from '../../domain';
+import { saveDiagramSchema, cardIdParamsSchema } from '../../contracts';
 import { validateDto } from '../../shared/http';
 import type { DiagramsService } from './diagrams.service';
 import type { PreHandler } from '../auth/auth.middleware';
@@ -7,7 +7,7 @@ import type { PreHandler } from '../auth/auth.middleware';
 export function diagramsRoutes(service: DiagramsService, authenticate: PreHandler) {
   return async function (fastify: FastifyInstance): Promise<void> {
     fastify.get('/:cardId', { preHandler: [authenticate] }, async (request) => {
-      const { cardId } = request.params as { cardId: string };
+      const { cardId } = validateDto(cardIdParamsSchema, request.params);
       return service.get(request.user.id, cardId);
     });
 
@@ -17,7 +17,7 @@ export function diagramsRoutes(service: DiagramsService, authenticate: PreHandle
     });
 
     fastify.delete('/:cardId', { preHandler: [authenticate] }, async (request, reply) => {
-      const { cardId } = request.params as { cardId: string };
+      const { cardId } = validateDto(cardIdParamsSchema, request.params);
       await service.delete(request.user.id, cardId);
       reply.status(204).send();
     });

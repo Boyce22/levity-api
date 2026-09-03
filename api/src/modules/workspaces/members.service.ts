@@ -5,7 +5,7 @@ import {
   type UpdateMemberRoleInput,
   type WorkspaceMemberResponse,
   type WorkspaceInviteResponse,
-} from '../../domain/index';
+} from '../../contracts/index';
 import { ConflictError, NotFoundError } from '../../shared/index';
 import {
   WorkspaceMember,

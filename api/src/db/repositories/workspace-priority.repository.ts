@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import type { CreatePriorityInput } from '../../domain/index';
+import type { CreatePriorityInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type WorkspacePriority } from '../entities/workspace-priority.entity';
 

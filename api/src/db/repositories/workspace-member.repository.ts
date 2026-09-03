@@ -1,5 +1,5 @@
 import type { Repository } from 'typeorm';
-import { type Role } from '../../domain/index';
+import { type Role } from '../../contracts/index';
 import { NotFoundError, ForbiddenError } from '../../shared/index';
 import { type WorkspaceMember } from '../entities/workspace-member.entity';
 

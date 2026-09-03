@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { loginSchema, registerSchema } from '../../domain';
+import { loginSchema, registerSchema } from '../../contracts';
 import { validateDto } from '../../shared/http';
 import type { AuthService } from './auth.service';
 

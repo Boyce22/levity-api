@@ -1,5 +1,5 @@
 import type { Logger } from 'pino';
-import { Role, type WorkspaceResponse, type WorkspaceInviteResponse } from '../../domain/index';
+import { Role, type WorkspaceResponse, type WorkspaceInviteResponse } from '../../contracts/index';
 import {
   Workspace,
   WorkspaceMember,

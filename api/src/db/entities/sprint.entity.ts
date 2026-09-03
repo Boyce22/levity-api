@@ -1,6 +1,6 @@
 import { Entity, Column, ManyToOne, OneToMany, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import type { SprintStatus, SprintTrackingMode } from '../../domain/index';
+import type { SprintStatus, SprintTrackingMode } from '../../contracts/index';
 import { Workspace } from './workspace.entity';
 import { SprintCard } from './sprint-card.entity';
 
@@ -12,7 +12,7 @@ export class Sprint {
   @Column({ type: 'uuid' })
   workspace_id!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name!: string;
 
   @Column({ type: 'varchar', nullable: true })

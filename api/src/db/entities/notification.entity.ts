@@ -1,6 +1,6 @@
 import { Entity, Column, CreateDateColumn, PrimaryColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { NotificationType } from '../../domain/index';
+import { NotificationType } from '../../contracts/index';
 
 @Entity('notifications')
 export class Notification {
@@ -22,7 +22,7 @@ export class Notification {
   @Column({ type: 'text' })
   content!: string;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   read!: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })

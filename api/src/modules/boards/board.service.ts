@@ -10,7 +10,7 @@ import type {
   ListWithCardsResponse,
   CardResponse,
   CardHistoryResponse,
-} from '../../domain/index';
+} from '../../contracts/index';
 import {
   Card,
   CardHistory,
