@@ -3,35 +3,54 @@
   "version": "1.0.0",
   "description": "Levity backend API",
   "private": true,
-  "workspaces": [
-    "api"
-  ],
+  "main": "dist/main.js",
   "scripts": {
-    "build": "npm run build -w @levity/api",
-    "build:clean": "npm run clean -w @levity/api",
-    "rebuild": "npm run clean -w @levity/api && npm run build -w @levity/api",
-    "typecheck": "npm run typecheck -w @levity/api",
+    "build": "tsc -p tsconfig.json",
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "rebuild": "npm run clean && npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "npm run test --workspaces --if-present",
-    "start:api": "npm run start -w @levity/api",
-    "dev:api": "npm run dev -w @levity/api",
-    "migration:generate": "npm run migration:generate -w @levity/api",
-    "migration:run": "npm run migration:run -w @levity/api",
-    "migration:revert": "npm run migration:revert -w @levity/api"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^20.11.5",
-    "eslint": "^9.39.1",
-    "globals": "^15.15.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.46.2"
+    "start": "node dist/main.js",
+    "dev": "tsc -p tsconfig.json && node --enable-source-maps --watch dist/main.js",
+    "test": "node --test --require ts-node/register tests/modules/auth/auth.middleware.test.ts tests/contracts/auth/schemas.test.ts tests/contracts/shared/pagination.schema.test.ts tests/shared/validate-schema.test.ts",
+    "typeorm": "typeorm-ts-node-commonjs -d ./src/db/data-source.ts",
+    "migration:generate": "npm run typeorm -- migration:generate",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "sharp": "^0.35.4"
+    "@fastify/compress": "^8.3.1",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/multipart": "^9.4.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "backblaze-b2": "^1.7.1",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.0",
+    "fastify": "^5.8.5",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3",
+    "reflect-metadata": "^0.2.2",
+    "sharp": "^0.35.4",
+    "typeorm": "^0.3.28",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.11.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "eslint": "^9.39.1",
+    "globals": "^15.15.0",
+    "ts-node": "^10.9.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-eslint": "^8.46.2"
   }
 }
