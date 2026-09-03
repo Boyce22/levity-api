@@ -22,7 +22,7 @@ export class AuthService {
 
     const accessToken = this.signToken(user.id, user.username);
     this.logger.info({ userId: user.id }, 'User logged in');
-    return { accessToken, user: { id: user.id, userName: user.username } };
+    return { accessToken, user: { id: user.id, username: user.username } };
   }
 
   async register(username: string, password: string, email?: string): Promise<AuthTokens> {
@@ -31,7 +31,7 @@ export class AuthService {
 
     const accessToken = this.signToken(user.id, user.username);
     this.logger.info({ userId: user.id }, 'User registered');
-    return { accessToken, user: { id: user.id, userName: user.username } };
+    return { accessToken, user: { id: user.id, username: user.username } };
   }
 
   verifyAccessToken(token: string): { id: string; username: string } {
