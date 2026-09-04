@@ -11,7 +11,7 @@ export function diagramsRoutes(service: DiagramsService, authenticate: PreHandle
       return service.get(request.user.id, cardId);
     });
 
-    fastify.put('/', { preHandler: [authenticate] }, async (request) => {
+    fastify.put('/', { preHandler: [authenticate], schema: { body: saveDiagramSchema } }, async (request) => {
       const input = validateDto(saveDiagramSchema, request.body);
       return service.save(request.user.id, input);
     });

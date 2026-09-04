@@ -56,7 +56,7 @@ export function filesRoutes(service: FilesService, authenticate: PreHandler) {
       return data;
     });
 
-    fastify.delete('/attachments', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.delete('/attachments', { preHandler: [authenticate], schema: { body: deleteFileSchema } }, async (request, reply) => {
       const { workspace_id, key } = validateDto(deleteFileSchema, request.body);
       await service.deleteFile(request.user.id, workspace_id, key);
       reply.status(204).send();

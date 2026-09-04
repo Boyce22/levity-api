@@ -11,7 +11,7 @@ Não é um tutorial de TypeScript. São as decisões que evitam monolito acident
 1. **Processos magros.** O processo HTTP não executa jobs longos (e-mail em massa, PDF, importação, chamadas lentas a terceiros). Cada runtime carrega só o que precisa.
 2. **Uma direção de dependência.** O domínio não conhece ORM, Fastify ou Redis. Quem inverte isso acopla o resto do sistema.
 3. **Wiring explícito.** Sem container de DI. Cada app tem um `composition-root.ts` que instancia logger, repositórios, services e rotas.
-4. **Validar na borda, calcular no centro.** Zod nos schemas; regras de negócio em funções puras ou services; persistência só persiste.
+4. **Validar na borda, calcular no centro.** TypeBox nos schemas; regras de negócio em funções puras ou services; persistência só persiste.
 5. **Fail-closed.** Env inválido, body inválido, falha de integração crítica: o processo **não finge sucesso**.
 6. **Hot path é bug.** Lista sem paginação, insert em loop, pool default e `Promise.all` ilimitado não são “depois”.
 
@@ -27,8 +27,8 @@ repo/
 │   ├── api/                 # HTTP — sempre ligado, imagem magra
 │   └── worker/              # opcional — um processo por tipo de trabalho
 ├── packages/
-│   ├── domain/              # enums, Zod, DTOs, payloads de job — zero I/O
-│   ├── config/              # env Zod + cliente Redis
+│   ├── domain/              # enums, TypeBox, DTOs, payloads de job — zero I/O
+│   ├── config/              # env TypeBox + cliente Redis
 │   ├── observability/       # logger, erros tipados, validateDto, lifecycle
 │   ├── persistence/         # entities, repos, DataSource, migrations
 │   ├── application/         # services de negócio + ports
@@ -52,7 +52,7 @@ Comece com `api` + `domain` + `application` + `persistence` + `config` + `observ
 
 | Camada | Pode | Não pode |
 |---|---|---|
-| **domain** | Tipos, enums, Zod, funções puras (cálculo, status, IDs estáveis) | TypeORM, Fastify, Redis, `fs`, `fetch` |
+| **domain** | Tipos, enums, TypeBox, funções puras (cálculo, status, IDs estáveis) | TypeORM, Fastify, Redis, `fs`, `fetch` |
 | **application** | Orquestrar casos de uso; chamar repos e ports | Conhecer Fastify, a lib de fila concreta, SDKs de terceiros |
 | **persistence** | Entities, queries, migrations | Regras de negócio, schemas HTTP |
 | **adapters** | I/O com o mundo externo (SMTP, S3, gateway de pagamento) | Conhecer controllers ou entities |
@@ -64,9 +64,9 @@ Organize `application` e rotas por **agregado** (`orders`, `customers`, `catalog
 ### 3.2 Grafo de dependências (obrigatório)
 
 ```text
-domain              →  (nada interno; só zod)
-config              →  zod, dotenv, ioredis
-observability       →  pino, zod
+domain              →  (nada interno; só TypeBox)
+config              →  TypeBox, dotenv, ioredis
+observability       →  pino, TypeBox
 persistence         →  domain, config
 application         →  domain, persistence, observability
 queues              →  domain, config
@@ -134,7 +134,7 @@ A implementação (`MailQueue` ou `SmtpMailer`) vive em `queues` ou num adapter.
 ```text
 HTTP → plugins (helmet, cors, compress, cookie, rate-limit)
      → preHandler (JWT / API key)
-     → controller: validateDto(zodSchema, body|query)
+     → controller: validateDto(typeBoxSchema, body|query)
      → application service
      → repository  |  port (fila / adapter)
      → AppError tipado  → error handler  → { message, errors? }
@@ -162,7 +162,7 @@ Uma lib por papel. Antes de adicionar dependência: o Node nativo ou um package 
 | Runtime | Node **20+** | `node:test`, `--watch`, source maps, `fetch` | Node 18 “porque funciona” |
 | Linguagem | TypeScript **strict** + `composite` | Build incremental por package | `any`; `skipLibCheck` como desculpa |
 | HTTP | **Fastify 5** | Throughput, plugins estáveis | Express + dezena de middlewares |
-| Validação | **Zod** (única fonte) | Env, body, query, payloads de job | class-validator + DTO duplicado |
+| Validação | **TypeBox** (única fonte) | Env, body, query, payloads de job | class-validator + DTO duplicado |
 | Logs | **Pino** | JSON, `child({ module })` | `console.log` em produção |
 | ORM | **TypeORM** + Postgres | Entities + migrations | `synchronize: true` em prod |
 | Fila | **BullMQ** + Redis | Retry, concurrency, retenção | `setTimeout` / fila caseira |
@@ -177,7 +177,7 @@ Uma lib por papel. Antes de adicionar dependência: o Node nativo ou um package 
 
 ### 4.1 Env por papel de runtime
 
-Valide **uma vez** na subida com Zod. Campos obrigatórios **mudam com `RUNTIME_ROLE`**:
+Valide **uma vez** na subida com TypeBox. Campos obrigatórios **mudam com `RUNTIME_ROLE`**:
 
 | Papel | Precisa |
 |---|---|
@@ -267,23 +267,21 @@ Error handler HTTP:
 ### 5.5 Validação
 
 ```ts
-export function validateDto<S extends ZodType>(schema: S, data: unknown): z.infer<S> {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new BadRequestError(
-      result.error.flatten().fieldErrors as Record<string, string[]>,
-    );
+export function validateDto<S extends TSchema>(schema: S, data: unknown): StaticDecode<S> {
+  try {
+    return Value.Parse(['Clone', 'Clean', 'Default', 'Assert', 'Decode'], schema, data) as StaticDecode<S>;
+  } catch (error) {
+    throw new UnprocessableEntityError(formatTypeBoxErrors(error));
   }
-  return result.data;
 }
 ```
 
 Paginação padrão (nunca lista unbounded):
 
 ```ts
-export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const paginationSchema = Type.Object({
+  page: coerceNumberSchema({ integer: true, min: 1, defaultValue: 1 }),
+  limit: coerceNumberSchema({ integer: true, min: 1, max: 100, defaultValue: 20 }),
 });
 ```
 
@@ -385,7 +383,7 @@ Paralelo o que é **independente**. Batch o que é o **mesmo tipo de I/O**. Não
 2. `tsconfig.base.json` strict + raiz com `references`
 3. Packages: `domain`, `config`, `observability`, `persistence`, `application`
 4. App `api`: `main.ts`, `app.ts`, `composition-root.ts`, `modules/<recurso>/*.controller.ts`
-5. Zod no env e no primeiro DTO; `validateDto` no controller
+5. TypeBox no env e no primeiro DTO; `validateDto` no controller
 6. `AppError` + error handler; Pino; graceful shutdown
 7. TypeORM + primeira migration; `synchronize: false`
 8. Paginação no primeiro `GET` de lista

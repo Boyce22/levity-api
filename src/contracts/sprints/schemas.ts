@@ -1,44 +1,45 @@
-import { z } from 'zod';
+import { Type, type Static } from '@sinclair/typebox';
 import { SprintTrackingMode } from './enums';
+import { dateOnlySchema, uuidSchema } from '../shared/typebox';
 
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD');
+const dateSchema = dateOnlySchema();
 
-export const createSprintSchema = z.object({
-  name: z.string().min(1).max(100),
-  goal: z.string().max(500).optional(),
+export const createSprintSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 100 }),
+  goal: Type.Optional(Type.String({ maxLength: 500 })),
   start_date: dateSchema,
   end_date: dateSchema,
-  tracking_mode: z.enum(SprintTrackingMode),
-  capacity_points: z.number().positive().optional(),
+  tracking_mode: Type.Enum(SprintTrackingMode),
+  capacity_points: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
 });
 
-export const updateSprintSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  goal: z.string().max(500).nullable().optional(),
-  start_date: dateSchema.optional(),
-  end_date: dateSchema.optional(),
-  tracking_mode: z.enum(SprintTrackingMode).optional(),
-  capacity_points: z.number().positive().nullable().optional(),
+export const updateSprintSchema = Type.Object({
+  name: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+  goal: Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()])),
+  start_date: Type.Optional(dateSchema),
+  end_date: Type.Optional(dateSchema),
+  tracking_mode: Type.Optional(Type.Enum(SprintTrackingMode)),
+  capacity_points: Type.Optional(Type.Union([Type.Number({ exclusiveMinimum: 0 }), Type.Null()])),
 });
 
-export const completeSprintSchema = z.object({
-  to_sprint_id: z.uuid().optional(),
+export const completeSprintSchema = Type.Object({
+  to_sprint_id: Type.Optional(uuidSchema),
 });
 
-export const addCardToSprintSchema = z.object({
-  card_id: z.uuid(),
-  position: z.number().int().min(0).default(0),
+export const addCardToSprintSchema = Type.Object({
+  card_id: uuidSchema,
+  position: Type.Integer({ minimum: 0, default: 0 }),
 });
 
-export const reorderSprintCardsSchema = z.array(
-  z.object({
-    id: z.uuid(),
-    position: z.number().int().min(0),
+export const reorderSprintCardsSchema = Type.Array(
+  Type.Object({
+    id: uuidSchema,
+    position: Type.Integer({ minimum: 0 }),
   }),
 );
 
-export type CreateSprintInput = z.infer<typeof createSprintSchema>;
-export type UpdateSprintInput = z.infer<typeof updateSprintSchema>;
-export type CompleteSprintInput = z.infer<typeof completeSprintSchema>;
-export type AddCardToSprintInput = z.infer<typeof addCardToSprintSchema>;
-export type ReorderSprintCardsInput = z.infer<typeof reorderSprintCardsSchema>;
+export type CreateSprintInput = Static<typeof createSprintSchema>;
+export type UpdateSprintInput = Static<typeof updateSprintSchema>;
+export type CompleteSprintInput = Static<typeof completeSprintSchema>;
+export type AddCardToSprintInput = Static<typeof addCardToSprintSchema>;
+export type ReorderSprintCardsInput = Static<typeof reorderSprintCardsSchema>;

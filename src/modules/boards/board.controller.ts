@@ -21,7 +21,7 @@ export function boardRoutes(service: BoardService, authenticate: PreHandler) {
       return service.getBoardData(request.user.id, workspaceId);
     });
 
-    fastify.post('/:workspaceId/lists', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:workspaceId/lists', { preHandler: [authenticate], schema: { body: createListSchema } }, async (request, reply) => {
       const { workspaceId } = validateDto(workspaceIdParamsSchema, request.params);
       const input = validateDto(createListSchema, request.body);
       const data = await service.createList(request.user.id, workspaceId, input);
@@ -29,14 +29,14 @@ export function boardRoutes(service: BoardService, authenticate: PreHandler) {
       return data;
     });
 
-    fastify.patch('/:workspaceId/lists/positions', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.patch('/:workspaceId/lists/positions', { preHandler: [authenticate], schema: { body: updateListPositionsSchema } }, async (request, reply) => {
       const { workspaceId } = validateDto(workspaceIdParamsSchema, request.params);
       const input = validateDto(updateListPositionsSchema, request.body);
       await service.updateListPositions(request.user.id, workspaceId, input);
       reply.status(204).send();
     });
 
-    fastify.patch('/:workspaceId/lists/:listId', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:workspaceId/lists/:listId', { preHandler: [authenticate], schema: { body: updateListSchema } }, async (request) => {
       const { listId } = validateDto(listIdParamsSchema, request.params);
       const input = validateDto(updateListSchema, request.body);
       return service.updateList(request.user.id, listId, input);
@@ -48,21 +48,21 @@ export function boardRoutes(service: BoardService, authenticate: PreHandler) {
       reply.status(204).send();
     });
 
-    fastify.post('/:workspaceId/cards', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:workspaceId/cards', { preHandler: [authenticate], schema: { body: createCardSchema } }, async (request, reply) => {
       const input = validateDto(createCardSchema, request.body);
       const data = await service.createCard(request.user.id, input);
       reply.status(201);
       return data;
     });
 
-    fastify.patch('/:workspaceId/cards/positions', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.patch('/:workspaceId/cards/positions', { preHandler: [authenticate], schema: { body: updateCardPositionsSchema } }, async (request, reply) => {
       const { workspaceId } = validateDto(workspaceIdParamsSchema, request.params);
       const input = validateDto(updateCardPositionsSchema, request.body);
       await service.updateCardPositions(request.user.id, workspaceId, input);
       reply.status(204).send();
     });
 
-    fastify.patch('/:workspaceId/cards/:cardId', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:workspaceId/cards/:cardId', { preHandler: [authenticate], schema: { body: updateCardSchema } }, async (request) => {
       const { cardId } = validateDto(cardIdParamsSchema, request.params);
       const input = validateDto(updateCardSchema, request.body);
       return service.updateCard(request.user.id, cardId, input);

@@ -975,7 +975,7 @@ All error responses share the same structure:
 }
 ```
 
-Validation errors (Zod) return `422` with field details:
+Validation errors (TypeBox) return `422` with field details:
 ```json
 {
   "error": "Validation error",

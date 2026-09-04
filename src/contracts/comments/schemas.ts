@@ -1,20 +1,21 @@
-import { z } from 'zod';
+import { Type, type Static, type StaticDecode } from '@sinclair/typebox';
+import { coerceNumberSchema, uuidSchema } from '../shared/typebox';
 
-export const createCommentSchema = z.object({
-  card_id: z.uuid(),
-  content: z.string().min(1).max(5000),
-  parent_id: z.uuid().optional().nullable(),
+export const createCommentSchema = Type.Object({
+  card_id: uuidSchema,
+  content: Type.String({ minLength: 1, maxLength: 5000 }),
+  parent_id: Type.Optional(Type.Union([uuidSchema, Type.Null()])),
 });
-export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type CreateCommentInput = Static<typeof createCommentSchema>;
 
-export const updateCommentSchema = z.object({
-  content: z.string().min(1).max(5000),
+export const updateCommentSchema = Type.Object({
+  content: Type.String({ minLength: 1, maxLength: 5000 }),
 });
-export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
+export type UpdateCommentInput = Static<typeof updateCommentSchema>;
 
-export const queryCommentsSchema = z.object({
-  card_id: z.uuid(),
-  limit: z.coerce.number().int().positive().max(50).default(20),
-  cursor: z.string().optional(),
+export const queryCommentsSchema = Type.Object({
+  card_id: uuidSchema,
+  limit: coerceNumberSchema({ integer: true, positive: true, max: 50, defaultValue: 20 }),
+  cursor: Type.Optional(Type.String()),
 });
-export type QueryCommentsInput = z.infer<typeof queryCommentsSchema>;
+export type QueryCommentsInput = StaticDecode<typeof queryCommentsSchema>;

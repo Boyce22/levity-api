@@ -30,7 +30,7 @@ export function sprintRoutes(service: SprintService, authenticate: PreHandler) {
       return service.getSprintById(sprintId, request.user.id);
     });
 
-    fastify.post('/:workspaceId/sprints', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:workspaceId/sprints', { preHandler: [authenticate], schema: { body: createSprintSchema } }, async (request, reply) => {
       const { workspaceId } = validateDto(workspaceIdParamsSchema, request.params);
       const input = validateDto(createSprintSchema, request.body);
       const data = await service.createSprint(workspaceId, input, request.user.id);
@@ -38,7 +38,7 @@ export function sprintRoutes(service: SprintService, authenticate: PreHandler) {
       return data;
     });
 
-    fastify.patch('/:workspaceId/sprints/:sprintId', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:workspaceId/sprints/:sprintId', { preHandler: [authenticate], schema: { body: updateSprintSchema } }, async (request) => {
       const { sprintId } = validateDto(sprintIdParamsSchema, request.params);
       const input = validateDto(updateSprintSchema, request.body);
       return service.updateSprint(sprintId, input, request.user.id);
@@ -55,13 +55,13 @@ export function sprintRoutes(service: SprintService, authenticate: PreHandler) {
       return service.activateSprint(sprintId, request.user.id);
     });
 
-    fastify.post('/:workspaceId/sprints/:sprintId/complete', { preHandler: [authenticate] }, async (request) => {
+    fastify.post('/:workspaceId/sprints/:sprintId/complete', { preHandler: [authenticate], schema: { body: completeSprintSchema } }, async (request) => {
       const { sprintId } = validateDto(sprintIdParamsSchema, request.params);
       const input = validateDto(completeSprintSchema, request.body ?? {});
       return service.completeSprint(sprintId, input, request.user.id);
     });
 
-    fastify.post('/:workspaceId/sprints/:sprintId/cards', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:workspaceId/sprints/:sprintId/cards', { preHandler: [authenticate], schema: { body: addCardToSprintSchema } }, async (request, reply) => {
       const { sprintId } = validateDto(sprintIdParamsSchema, request.params);
       const { card_id } = validateDto(addCardToSprintSchema, request.body);
       const data = await service.addCardToSprint(sprintId, card_id, request.user.id);
@@ -81,7 +81,7 @@ export function sprintRoutes(service: SprintService, authenticate: PreHandler) {
 
     fastify.patch(
       '/:workspaceId/sprints/:sprintId/cards/reorder',
-      { preHandler: [authenticate] },
+      { preHandler: [authenticate], schema: { body: reorderSprintCardsSchema } },
       async (request, reply) => {
         const { sprintId } = validateDto(sprintIdParamsSchema, request.params);
         const input = validateDto(reorderSprintCardsSchema, request.body);

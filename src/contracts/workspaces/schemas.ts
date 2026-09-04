@@ -1,38 +1,38 @@
-import { z } from 'zod';
+import { Type, type Static } from '@sinclair/typebox';
 import { Role } from '../shared/roles.enum';
 
-export const createWorkspaceSchema = z.object({
-  name: z.string().min(1).max(100),
+export const createWorkspaceSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 100 }),
 });
-export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
+export type CreateWorkspaceInput = Static<typeof createWorkspaceSchema>;
 
-export const renameWorkspaceSchema = z.object({
-  name: z.string().min(1).max(100),
+export const renameWorkspaceSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 100 }),
 });
-export type RenameWorkspaceInput = z.infer<typeof renameWorkspaceSchema>;
+export type RenameWorkspaceInput = Static<typeof renameWorkspaceSchema>;
 
-export const generateInviteSchema = z.object({
-  max_uses: z.number().int().positive().max(100).default(1),
-  expires_in_hours: z.number().int().positive().max(720).optional(),
-  role: z.enum(Role).default(Role.MEMBER),
+export const generateInviteSchema = Type.Object({
+  max_uses: Type.Integer({ exclusiveMinimum: 0, maximum: 100, default: 1 }),
+  expires_in_hours: Type.Optional(Type.Integer({ exclusiveMinimum: 0, maximum: 720 })),
+  role: Type.Enum(Role, { default: Role.MEMBER }),
 });
-export type GenerateInviteInput = z.infer<typeof generateInviteSchema>;
+export type GenerateInviteInput = Static<typeof generateInviteSchema>;
 
-export const updateMemberRoleSchema = z.object({
-  role: z.enum(Role),
+export const updateMemberRoleSchema = Type.Object({
+  role: Type.Enum(Role),
 });
-export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>;
+export type UpdateMemberRoleInput = Static<typeof updateMemberRoleSchema>;
 
-export const createTagSchema = z.object({
-  name: z.string().min(1).max(50),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+export const createTagSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 50 }),
+  color: Type.String({ pattern: /^#[0-9a-fA-F]{6}$/.source }),
 });
-export type CreateTagInput = z.infer<typeof createTagSchema>;
+export type CreateTagInput = Static<typeof createTagSchema>;
 
-export const createPrioritySchema = z.object({
-  name: z.string().min(1).max(50),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  icon: z.string().min(1).max(10),
-  position: z.number().int().min(0).default(0),
+export const createPrioritySchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 50 }),
+  color: Type.String({ pattern: /^#[0-9a-fA-F]{6}$/.source }),
+  icon: Type.String({ minLength: 1, maxLength: 10 }),
+  position: Type.Integer({ minimum: 0, default: 0 }),
 });
-export type CreatePriorityInput = z.infer<typeof createPrioritySchema>;
+export type CreatePriorityInput = Static<typeof createPrioritySchema>;

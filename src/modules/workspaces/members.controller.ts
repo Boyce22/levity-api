@@ -11,7 +11,7 @@ export function membersRoutes(service: MembersService, authenticate: PreHandler)
       return service.getMembers(request.user.id, id);
     });
 
-    fastify.patch('/:id/members/:memberId/role', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:id/members/:memberId/role', { preHandler: [authenticate], schema: { body: updateMemberRoleSchema } }, async (request) => {
       const { id, memberId } = validateDto(memberParamsSchema, request.params);
       const input = validateDto(updateMemberRoleSchema, request.body);
       return service.updateMemberRole(request.user.id, id, memberId, input);

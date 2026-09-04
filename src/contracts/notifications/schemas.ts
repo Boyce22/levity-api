@@ -1,27 +1,20 @@
-import { z } from 'zod';
+import { Type, type Static, type StaticDecode } from '@sinclair/typebox';
 import { NotificationType } from '../shared/notification-type.enum';
+import { booleanQuerySchema, coerceNumberSchema, dateTimeSchema, uuidSchema } from '../shared/typebox';
 
-const booleanQuerySchema = z.preprocess((value) => {
-  if (typeof value === 'string') {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-  }
-  return value;
-}, z.boolean());
-
-export const queryNotificationsSchema = z.object({
-  read: booleanQuerySchema.optional(),
-  cursor: z.string().datetime().optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(50).default(20),
+export const queryNotificationsSchema = Type.Object({
+  read: Type.Optional(booleanQuerySchema),
+  cursor: Type.Optional(dateTimeSchema),
+  page: coerceNumberSchema({ integer: true, positive: true, defaultValue: 1 }),
+  limit: coerceNumberSchema({ integer: true, positive: true, max: 50, defaultValue: 20 }),
 });
-export type QueryNotificationsInput = z.infer<typeof queryNotificationsSchema>;
+export type QueryNotificationsInput = StaticDecode<typeof queryNotificationsSchema>;
 
-export const createNotificationSchema = z.object({
-  user_id: z.uuid(),
-  actor_id: z.uuid(),
-  card_id: z.uuid(),
-  type: z.enum(NotificationType),
-  content: z.string().min(1).max(500),
+export const createNotificationSchema = Type.Object({
+  user_id: uuidSchema,
+  actor_id: uuidSchema,
+  card_id: uuidSchema,
+  type: Type.Enum(NotificationType),
+  content: Type.String({ minLength: 1, maxLength: 500 }),
 });
-export type CreateNotificationInput = z.infer<typeof createNotificationSchema>;
+export type CreateNotificationInput = Static<typeof createNotificationSchema>;

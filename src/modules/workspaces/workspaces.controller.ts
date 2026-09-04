@@ -22,14 +22,14 @@ export function workspaceRoutes(
       return workspaceService.getWorkspaces(request.user.id);
     });
 
-    fastify.post('/', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/', { preHandler: [authenticate], schema: { body: createWorkspaceSchema } }, async (request, reply) => {
       const { name } = validateDto(createWorkspaceSchema, request.body);
       const data = await workspaceService.create(request.user.id, name);
       reply.status(201);
       return data;
     });
 
-    fastify.patch('/:id', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:id', { preHandler: [authenticate], schema: { body: renameWorkspaceSchema } }, async (request) => {
       const { id } = validateDto(idParamsSchema, request.params);
       const { name } = validateDto(renameWorkspaceSchema, request.body);
       return workspaceService.rename(request.user.id, id, name);
@@ -46,7 +46,7 @@ export function workspaceRoutes(
       return workspaceService.getInvites(request.user.id, id);
     });
 
-    fastify.post('/:id/invites', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:id/invites', { preHandler: [authenticate], schema: { body: generateInviteSchema } }, async (request, reply) => {
       const { id } = validateDto(idParamsSchema, request.params);
       const input = validateDto(generateInviteSchema, request.body);
       const data = await membersService.generateInvite(request.user.id, id, input);

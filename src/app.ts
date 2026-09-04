@@ -37,7 +37,17 @@ export async function buildApp(container: ApiContainer): Promise<FastifyInstance
           description: 'Local development server',
         },
       ],
-    },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+      security: [{ bearerAuth: [] }],
+    }
   });
 
   await fastify.register(fastifySwaggerUi, {

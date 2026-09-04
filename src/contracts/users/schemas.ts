@@ -1,17 +1,18 @@
-import { z } from 'zod';
+import { Type, type Static } from '@sinclair/typebox';
+import { emailSchema, uuidSchema } from '../shared/typebox';
 
-export const updateUserSchema = z.object({
-  display_name: z.string().min(1).max(50).optional(),
-  avatar_url: z.string().optional(),
-  bio: z.string().max(500).optional(),
-  email: z.email().optional(),
+export const updateUserSchema = Type.Object({
+  display_name: Type.Optional(Type.String({ minLength: 1, maxLength: 50 })),
+  avatar_url: Type.Optional(Type.String()),
+  bio: Type.Optional(Type.String({ maxLength: 500 })),
+  email: Type.Optional(emailSchema),
 });
 
-export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UpdateUserInput = Static<typeof updateUserSchema>;
 
-export const queryUsersSchema = z.object({
-  workspace_id: z.uuid().optional(),
-  search: z.string().optional(),
+export const queryUsersSchema = Type.Object({
+  workspace_id: Type.Optional(uuidSchema),
+  search: Type.Optional(Type.String()),
 });
 
-export type QueryUsersInput = z.infer<typeof queryUsersSchema>;
+export type QueryUsersInput = Static<typeof queryUsersSchema>;

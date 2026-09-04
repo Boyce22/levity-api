@@ -1,8 +1,9 @@
-import { z } from 'zod';
+import { Type, type StaticDecode } from '@sinclair/typebox';
+import { coerceNumberSchema } from './typebox';
 
-export const paginationSchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const paginationSchema = Type.Object({
+  page: coerceNumberSchema({ integer: true, min: 1, defaultValue: 1 }),
+  limit: coerceNumberSchema({ integer: true, min: 1, max: 100, defaultValue: 20 }),
 });
 
-export type PaginationInput = z.infer<typeof paginationSchema>;
+export type PaginationInput = StaticDecode<typeof paginationSchema>;

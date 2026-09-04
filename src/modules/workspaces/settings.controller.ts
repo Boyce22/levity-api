@@ -17,7 +17,7 @@ export function settingsRoutes(service: SettingsService, authenticate: PreHandle
       return service.getTags(request.user.id, id);
     });
 
-    fastify.post('/:id/tags', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:id/tags', { preHandler: [authenticate], schema: { body: createTagSchema } }, async (request, reply) => {
       const { id } = validateDto(idParamsSchema, request.params);
       const input = validateDto(createTagSchema, request.body);
       const data = await service.createTag(request.user.id, id, input);
@@ -36,7 +36,7 @@ export function settingsRoutes(service: SettingsService, authenticate: PreHandle
       return service.getPriorities(request.user.id, id);
     });
 
-    fastify.post('/:id/priorities', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/:id/priorities', { preHandler: [authenticate], schema: { body: createPrioritySchema } }, async (request, reply) => {
       const { id } = validateDto(idParamsSchema, request.params);
       const input = validateDto(createPrioritySchema, request.body);
       const data = await service.createPriority(request.user.id, id, input);

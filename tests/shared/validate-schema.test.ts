@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { z } from 'zod';
+import { Type } from '@sinclair/typebox';
 import { UnprocessableEntityError } from '../../src/shared/errors';
 import { validateDto } from '../../src/shared/validate-schema';
 
-const schema = z.object({
-  name: z.string().min(1),
+const schema = Type.Object({
+  name: Type.String({ minLength: 1 }),
 });
 
 test('validateDto returns parsed data', () => {

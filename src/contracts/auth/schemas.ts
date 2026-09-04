@@ -1,16 +1,17 @@
-import { z } from 'zod';
+import { Type, type Static } from '@sinclair/typebox';
+import { emailSchema } from '../shared/typebox';
 
-export const loginSchema = z.object({
-  username: z.string().min(3),
-  password: z.string().min(5),
+export const loginSchema = Type.Object({
+  username: Type.String({ minLength: 3 }),
+  password: Type.String({ minLength: 5 }),
 });
 
-export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginInput = Static<typeof loginSchema>;
 
-export const registerSchema = z.object({
-  username: z.string().min(3).max(30),
-  password: z.string().min(5),
-  email: z.email().optional(),
+export const registerSchema = Type.Object({
+  username: Type.String({ minLength: 3, maxLength: 30 }),
+  password: Type.String({ minLength: 5 }),
+  email: Type.Optional(emailSchema),
 });
 
-export type RegisterInput = z.infer<typeof registerSchema>;
+export type RegisterInput = Static<typeof registerSchema>;

@@ -16,14 +16,14 @@ export function commentsRoutes(service: CommentsService, authenticate: PreHandle
       return service.getComments(request.user.id, query);
     });
 
-    fastify.post('/', { preHandler: [authenticate] }, async (request, reply) => {
+    fastify.post('/', { preHandler: [authenticate], schema: { body: createCommentSchema } }, async (request, reply) => {
       const input = validateDto(createCommentSchema, request.body);
       const data = await service.create(request.user.id, input);
       reply.status(201);
       return data;
     });
 
-    fastify.patch('/:id', { preHandler: [authenticate] }, async (request) => {
+    fastify.patch('/:id', { preHandler: [authenticate], schema: { body: updateCommentSchema } }, async (request) => {
       const { id } = validateDto(idParamsSchema, request.params);
       const input = validateDto(updateCommentSchema, request.body);
       return service.update(request.user.id, id, input);

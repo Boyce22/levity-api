@@ -6,7 +6,7 @@ import type { PreHandler } from '../auth/auth.middleware';
 
 export function notificationsRoutes(service: NotificationsService, authenticate: PreHandler) {
   return async function (fastify: FastifyInstance): Promise<void> {
-    fastify.get('/', { preHandler: [authenticate] }, async (request) => {
+    fastify.get('/', { preHandler: [authenticate], schema: { querystring: queryNotificationsSchema } }, async (request) => {
       const query = validateDto(queryNotificationsSchema, request.query);
       return service.getNotifications(request.user.id, query);
     });
