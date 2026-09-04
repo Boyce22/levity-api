@@ -2,6 +2,7 @@ import Backblaze from 'backblaze-b2';
 import type { UploadResult } from '../../../../contracts/index';
 import { ExternalServiceError } from '../../../../shared/index';
 import type { StoragePort } from '../../storage.port';
+import type { Logger } from 'pino';
 
 export interface BackblazeCredentials {
   applicationKeyId: string;
@@ -15,6 +16,7 @@ export class BackblazeProvider implements StoragePort {
   private readonly b2: InstanceType<typeof Backblaze>;
   private authorized = false;
   private downloadUrl?: string;
+  private logger: Logger;
 
   constructor(private readonly credentials: BackblazeCredentials) {
     this.b2 = new Backblaze({
@@ -28,7 +30,8 @@ export class BackblazeProvider implements StoragePort {
       const { data } = await this.b2.authorize();
       this.downloadUrl = this.credentials.downloadUrl ?? data.downloadUrl;
       this.authorized = true;
-    }
+
+        }
   }
 
   async upload(buffer: Buffer, key: string, mimeType: string): Promise<UploadResult> {
@@ -60,8 +63,11 @@ export class BackblazeProvider implements StoragePort {
   }
 
   async getSignedUrl(key: string, expiresInSeconds: number): Promise<string> {
+    try{
     await this.authorize();
-
+    } catch (error) {
+      return ''
+    }
     if (!this.downloadUrl) {
       throw new ExternalServiceError('backblaze', 'Download URL not available');
     }
