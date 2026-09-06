@@ -52,8 +52,13 @@ export class FilesService {
   }
 
   async resolveUrl(key: string | null | undefined, ttlSeconds = 3600): Promise<string | undefined> {
-    if (!key) return undefined;
-    if (key.startsWith('http://') || key.startsWith('https://')) return key;
+    
+    if (!key) throw new Error('Invalid key provided for URL resolution');
+
+    if (key?.startsWith('http://') || key?.startsWith('https://')) {
+      return key;
+    }
+
     return this.storage.getSignedUrl(key, ttlSeconds);
   }
 

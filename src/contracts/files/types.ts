@@ -1,9 +1,12 @@
+import type { MultipartFile } from '@fastify/multipart';
+
 export interface UploadResult {
   url: string;
   publicId: string;
 }
 
 export interface UploadedFile {
+  file: MultipartFile;
   buffer: Buffer;
   originalname: string;
   mimetype: string;

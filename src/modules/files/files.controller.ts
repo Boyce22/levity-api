@@ -32,7 +32,7 @@ async function readUploadedFile(request: FastifyRequest): Promise<{
   }
   const buffer = await part.toBuffer();
   return {
-    file: { buffer, originalname: part.filename, mimetype: part.mimetype },
+    file: { file: part, buffer, originalname: part.filename, mimetype: part.mimetype },
     fields: part.fields as Record<string, { value?: string } | Array<{ value?: string }> | undefined>,
   };
 }
