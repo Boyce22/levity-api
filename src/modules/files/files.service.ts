@@ -3,16 +3,18 @@ import path from 'path';
 import type { Logger } from 'pino';
 import type { UploadResult, UploadedFile } from '../../contracts/index';
 import { BadRequestError } from '../../shared/index';
-import type { WorkspaceMemberRepository } from '../../db/index';
+import type { UserRepository, WorkspaceMemberRepository } from '../../db/index';
 import type { CompressorPort, StoragePort } from './storage.port';
+import { MultipartFile } from '@fastify/multipart';
 
 export class FilesService {
   constructor(
     private readonly storage: StoragePort,
     private readonly compressor: CompressorPort,
     private readonly memberRepository: WorkspaceMemberRepository,
+    private readonly userRepository: UserRepository,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
   async uploadAttachment(userId: string, workspaceId: string, file: UploadedFile): Promise<UploadResult> {
     await this.memberRepository.assertMember(userId, workspaceId);
@@ -31,10 +33,12 @@ export class FilesService {
     return result;
   }
 
-  async uploadAvatar(userId: string, file: UploadedFile): Promise<UploadResult> {
+  async uploadAvatar(userId: string, file: MultipartFile): Promise<UploadResult> {
     const key = `avatars/${userId}.webp`;
-    const buffer = await this.compressor.compress(file.buffer, { width: 256, height: 256, quality: 85 });
+    const fileBuffer = await file.toBuffer();
+    const buffer = await this.compressor.compress(fileBuffer, { width: 256, height: 256, quality: 85 });
     const result = await this.storage.upload(buffer, key, 'image/webp');
+    await this.userRepository.update(userId, { avatar_url: key });
     this.logger.info({ userId, key }, 'Avatar uploaded');
     return result;
   }
@@ -52,7 +56,7 @@ export class FilesService {
   }
 
   async resolveUrl(key: string | null | undefined, ttlSeconds = 3600): Promise<string | undefined> {
-    
+
     if (!key) throw new Error('Invalid key provided for URL resolution');
 
     if (key?.startsWith('http://') || key?.startsWith('https://')) {

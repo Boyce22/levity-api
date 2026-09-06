@@ -2,13 +2,14 @@ import type { Logger } from 'pino';
 import type { UpdateUserInput, UserResponse, UserPublicResponse } from '../../contracts/index';
 import type { User, UserRepository } from '../../db/index';
 import type { FilesService } from '../files/files.service';
+import { MultipartFile } from '@fastify/multipart';
 
 export class UsersService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly filesService: FilesService,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
   async getProfile(userId: string): Promise<UserResponse> {
     const user = await this.userRepository.findByIdOrFail(userId);
@@ -31,9 +32,7 @@ export class UsersService {
   async updateProfile(userId: string, input: UpdateUserInput): Promise<UserResponse> {
     const user = await this.userRepository.update(userId, input);
     this.logger.info({ userId }, 'User profile updated');
-    const response = toUserResponse(user);
-    response.avatar_url = await this.filesService.resolveUrl(user.avatar_url);
-    return response;
+    return toUserResponse(user);
   }
 }
 

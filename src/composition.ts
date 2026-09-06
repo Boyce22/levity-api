@@ -116,6 +116,7 @@ export function createApiContainer(): ApiContainer {
     createStorageProvider(env),
     new CompressorService(),
     memberRepository,
+    userRepository,
     logger.child({ name: 'files' }),
   );
   const usersService = new UsersService(userRepository, filesService, logger.child({ name: 'users' }));

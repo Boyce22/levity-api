@@ -50,7 +50,14 @@ export function filesRoutes(service: FilesService, authenticate: PreHandler) {
     });
 
     fastify.post('/avatar', { preHandler: [authenticate] }, async (request, reply) => {
-      const { file } = await readUploadedFile(request);
+      const file = await request.file();
+
+      if (!file) throw new BadRequestError('No file provided');
+
+      if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+        throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
+      }
+
       const data = await service.uploadAvatar(request.user.id, file);
       reply.status(201);
       return data;
