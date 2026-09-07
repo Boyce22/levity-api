@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import path from 'path';
 import type { Logger } from 'pino';
-import type { UploadResult, UploadedFile } from '../../contracts/index';
+import type { UploadAttachmentBody, UploadResult, UploadedFile } from '../../contracts/index';
 import { BadRequestError } from '../../shared/index';
 import type { UserRepository, WorkspaceMemberRepository } from '../../db/index';
 import type { CompressorPort, StoragePort } from './storage.port';
@@ -34,6 +34,7 @@ export class FilesService {
   }
 
   async uploadAvatar(userId: string, file: MultipartFile): Promise<UploadResult> {
+    
     const key = `avatars/${userId}.webp`;
     const fileBuffer = await file.toBuffer();
     const buffer = await this.compressor.compress(fileBuffer, { width: 256, height: 256, quality: 85 });

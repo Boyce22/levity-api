@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import compress from '@fastify/compress';
 import rateLimit from '@fastify/rate-limit';
-import multipart from '@fastify/multipart';
+import multipart, { ajvFilePlugin } from '@fastify/multipart';
 import { fastifySwagger } from '@fastify/swagger';
 import { fastifySwaggerUi } from '@fastify/swagger-ui'; 
 
@@ -18,7 +18,7 @@ export async function buildApp(container: ApiContainer): Promise<FastifyInstance
 
   const fastify = Fastify({
     logger: {
-      level: env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: env.LOG_LEVEL,
     },
     trustProxy: true,
     bodyLimit: MAX_IMAGE_SIZE_BYTES,
@@ -62,7 +62,9 @@ export async function buildApp(container: ApiContainer): Promise<FastifyInstance
   });
   await fastify.register(compress);
   await fastify.register(multipart, {
-    limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
+    limits: {
+      fileSize: MAX_IMAGE_SIZE_BYTES,
+    },
   });
 
   if (env.NODE_ENV === 'production') {
