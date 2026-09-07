@@ -3,7 +3,6 @@ import {
   ALLOWED_IMAGE_TYPES,
   deleteFileSchema,
   fileRouteParamsSchema,
-  uploadAttachmentBodySchema,
   uploadAttachmentSchema,
   type UploadedFile,
 } from '../../contracts';

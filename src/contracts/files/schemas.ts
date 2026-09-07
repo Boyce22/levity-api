@@ -8,11 +8,6 @@ export const uploadAttachmentSchema = Type.Object({
   }),
 });
 
-export const uploadAttachmentBodySchema = Type.Object({
-  file: Type.Unsafe({
-    isFile: true,
-  }),
-});
 
 export const deleteFileSchema = Type.Object({
   workspace_id: uuidSchema,
@@ -29,4 +24,3 @@ export const fileRouteParamsSchema = Type.Object({
 export type UploadAttachmentInput = Static<typeof uploadAttachmentSchema>;
 export type DeleteFileInput = Static<typeof deleteFileSchema>;
 export type FileRouteParams = Static<typeof fileRouteParamsSchema>;
-export type UploadAttachmentBody = Static<typeof uploadAttachmentBodySchema>;
