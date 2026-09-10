@@ -1,27 +1,27 @@
 import { Entity, Column, ManyToOne, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { MembershipStatus, WorkspaceRole } from '../../contracts/index';
+import { BoardRole, MembershipStatus } from '../../contracts/index';
 import { User } from './user.entity';
-import { Workspace } from './workspace.entity';
+import { Board } from './board.entity';
 
-@Entity('workspace_members')
-export class WorkspaceMember {
+@Entity('board_members')
+export class BoardMember {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
   @Column({ type: 'uuid' })
-  workspace_id!: string;
+  board_id!: string;
 
   @Column({ type: 'uuid' })
   user_id!: string;
 
   @Column({
     type: 'enum',
-    enum: WorkspaceRole,
-    enumName: 'workspace_role_enum',
-    default: WorkspaceRole.MEMBER,
+    enum: BoardRole,
+    enumName: 'board_role_enum',
+    default: BoardRole.EDITOR,
   })
-  role!: WorkspaceRole;
+  role!: BoardRole;
 
   @Column({
     type: 'enum',
@@ -40,9 +40,9 @@ export class WorkspaceMember {
   @Column({ type: 'timestamptz', nullable: true })
   last_accessed_at?: Date | null;
 
-  @ManyToOne(() => Workspace, (w) => w.members, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'workspace_id' })
-  workspace!: Workspace;
+  @ManyToOne(() => Board, (b) => b.members, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'board_id' })
+  board!: Board;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

@@ -1,6 +1,6 @@
 import type { Repository } from 'typeorm';
-import { type Role } from '../../contracts/index';
-import { NotFoundError, BadRequestError } from '../../shared/index';
+import { type WorkspaceRole } from '../../contracts/index';
+import { BadRequestError } from '../../shared/index';
 import { type WorkspaceInvite } from '../entities/workspace-invite.entity';
 
 export class WorkspaceInviteRepository {
@@ -22,28 +22,32 @@ export class WorkspaceInviteRepository {
     workspaceId: string,
     createdBy: string,
     maxUses: number,
-    role: Role,
+    workspaceRole: WorkspaceRole,
     expiresAt?: Date,
   ): Promise<WorkspaceInvite> {
     const invite = this.repository.create({
       workspace_id: workspaceId,
       created_by: createdBy,
       max_uses: maxUses,
-      role,
+      workspace_role: workspaceRole,
       expires_at: expiresAt,
     });
     return this.repository.save(invite);
   }
 
   async consume(token: string): Promise<WorkspaceInvite> {
-    const invite = await this.findByToken(token);
-    if (!invite) throw new NotFoundError('Invite not found');
-    if (invite.revoked_at) throw new BadRequestError('Invite has been revoked');
-    if (invite.expires_at && new Date() > invite.expires_at) throw new BadRequestError('Invite has expired');
-    if (invite.current_uses >= invite.max_uses) throw new BadRequestError('Invite has reached its maximum uses');
-
-    invite.current_uses += 1;
-    return this.repository.save(invite);
+    const rows: WorkspaceInvite[] = await this.repository.query(
+      `UPDATE workspace_invites SET current_uses = current_uses + 1
+       WHERE token = $1
+         AND revoked_at IS NULL
+         AND current_uses < max_uses
+         AND (expires_at IS NULL OR expires_at > now())
+       RETURNING *`,
+      [token],
+    );
+    const invite = rows[0];
+    if (!invite) throw new BadRequestError('Invite is invalid, expired, or exhausted');
+    return invite;
   }
 
   async revoke(id: string): Promise<void> {

@@ -1,8 +1,8 @@
 import { Entity, Column, ManyToOne, OneToMany, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
 import type { SprintStatus, SprintTrackingMode } from '../../contracts/index';
-import { Workspace } from './workspace.entity';
-import { SprintCard } from './sprint-card.entity';
+import { Board } from './board.entity';
+import { SprintIssue } from './sprint-issue.entity';
 
 @Entity('sprints')
 export class Sprint {
@@ -10,7 +10,7 @@ export class Sprint {
   id: string = generateUUID();
 
   @Column({ type: 'uuid' })
-  workspace_id!: string;
+  board_id!: string;
 
   @Column({ type: 'varchar' })
   name!: string;
@@ -34,7 +34,7 @@ export class Sprint {
   capacity_points?: number | null;
 
   @Column({ type: 'float', nullable: true })
-  velocity_points?: number;
+  velocity_points?: number | null;
 
   @Column({ type: 'uuid' })
   created_by!: string;
@@ -42,10 +42,10 @@ export class Sprint {
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   created_at!: Date;
 
-  @ManyToOne(() => Workspace, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'workspace_id' })
-  workspace!: Workspace;
+  @ManyToOne(() => Board, (b) => b.sprints, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'board_id' })
+  board!: Board;
 
-  @OneToMany(() => SprintCard, (sc) => sc.sprint)
-  sprint_cards!: SprintCard[];
+  @OneToMany(() => SprintIssue, (si) => si.sprint)
+  sprint_issues!: SprintIssue[];
 }

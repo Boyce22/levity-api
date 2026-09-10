@@ -1,4 +1,4 @@
-import type { Role } from '../shared/roles.enum';
+import type { BoardRole, CatalogStatus, MembershipStatus, WorkspaceRole } from '../shared/roles.enum';
 
 export interface WorkspaceResponse {
   id: string;
@@ -12,9 +12,15 @@ export interface WorkspaceMemberResponse {
   id: string;
   workspace_id: string;
   user_id: string;
-  role: Role;
+  role: WorkspaceRole;
   joined_at: string;
-  user?: { username: string; display_name?: string; avatar_url?: string };
+  membership_status?: MembershipStatus;
+  user?: { username: string; first_name?: string; last_name?: string; avatar_url?: string };
+}
+
+export interface InviteBoardGrantResponse {
+  board_id: string;
+  board_role: BoardRole;
 }
 
 export interface WorkspaceInviteResponse {
@@ -26,8 +32,9 @@ export interface WorkspaceInviteResponse {
   current_uses: number;
   expires_at?: string;
   revoked_at?: string;
-  role: Role;
+  workspace_role: WorkspaceRole;
   created_at: string;
+  grants?: InviteBoardGrantResponse[];
 }
 
 export interface WorkspaceTagResponse {
@@ -36,6 +43,7 @@ export interface WorkspaceTagResponse {
   name: string;
   color: string;
   created_at: string;
+  status?: CatalogStatus;
 }
 
 export interface WorkspacePriorityResponse {
@@ -46,42 +54,14 @@ export interface WorkspacePriorityResponse {
   icon: string;
   position: number;
   created_at: string;
+  code?: string | null;
+  is_system: boolean;
+  status: CatalogStatus;
 }
 
-export interface BoardDataResponse {
-  workspace: WorkspaceResponse;
-  lists: ListWithCardsResponse[];
-  members: WorkspaceMemberResponse[];
-  tags: WorkspaceTagResponse[];
-  priorities: WorkspacePriorityResponse[];
-}
-
-export interface ListWithCardsResponse {
+export interface HomeBoardResponse {
   id: string;
-  title: string;
+  name: string;
   position: number;
-  wip_limit?: number;
-  list_type?: string;
-  workspace_id: string;
-  created_at: string;
-  cards: CardResponse[];
-}
-
-export interface CardResponse {
-  id: string;
-  content: string;
-  position: number;
-  description?: string;
-  cover_url?: string;
-  assignee_id?: string;
-  priority?: string;
-  label?: string;
-  progress?: number;
-  due_date?: string;
-  list_id: string;
-  created_by: string;
-  created_at: string;
-  comment_count: number;
-  story_points?: number;
-  estimated_hours?: number;
+  role: BoardRole;
 }

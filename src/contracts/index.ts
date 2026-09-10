@@ -1,5 +1,5 @@
 export * from './shared/roles.enum';
-export * from './shared/list-type.enum';
+export * from './shared/board-column-type.enum';
 export * from './shared/notification-type.enum';
 export * from './shared/api-response.interface';
 export * from './shared/pagination.schema';
@@ -15,6 +15,7 @@ export * from './workspaces/schemas';
 export * from './workspaces/dtos';
 
 export * from './boards/schemas';
+export * from './boards/dtos';
 
 export * from './comments/schemas';
 export * from './comments/dtos';

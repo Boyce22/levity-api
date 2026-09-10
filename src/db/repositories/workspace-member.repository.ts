@@ -1,5 +1,5 @@
-import type { Repository } from 'typeorm';
-import { type Role } from '../../contracts/index';
+import { type Repository } from 'typeorm';
+import { MembershipStatus, type WorkspaceRole } from '../../contracts/index';
 import { NotFoundError, ForbiddenError } from '../../shared/index';
 import { type WorkspaceMember } from '../entities/workspace-member.entity';
 
@@ -11,35 +11,64 @@ export class WorkspaceMemberRepository {
   }
 
   async findByUserAndWorkspace(userId: string, workspaceId: string): Promise<WorkspaceMember | null> {
+    const active = await this.repository.findOne({
+      where: { user_id: userId, workspace_id: workspaceId, membership_status: MembershipStatus.ACTIVE },
+    });
+    if (active) return active;
     return this.repository.findOne({ where: { user_id: userId, workspace_id: workspaceId } });
   }
 
   async assertMember(userId: string, workspaceId: string): Promise<WorkspaceMember> {
-    const member = await this.findByUserAndWorkspace(userId, workspaceId);
+    const member = await this.repository.findOne({
+      where: { user_id: userId, workspace_id: workspaceId, membership_status: MembershipStatus.ACTIVE },
+    });
     if (!member) throw new ForbiddenError('Not a member of this workspace');
     return member;
   }
 
-  async assertRole(userId: string, workspaceId: string, ...allowedRoles: Role[]): Promise<WorkspaceMember> {
+  async assertRole(userId: string, workspaceId: string, ...allowedRoles: WorkspaceRole[]): Promise<WorkspaceMember> {
     const member = await this.assertMember(userId, workspaceId);
     if (!allowedRoles.includes(member.role)) throw new ForbiddenError('Insufficient permissions');
     return member;
   }
 
-  async add(workspaceId: string, userId: string, role: Role): Promise<WorkspaceMember> {
-    const member = this.repository.create({ workspace_id: workspaceId, user_id: userId, role });
+  async add(workspaceId: string, userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
+    const member = this.repository.create({
+      workspace_id: workspaceId,
+      user_id: userId,
+      role,
+      membership_status: MembershipStatus.ACTIVE,
+    });
     return this.repository.save(member);
   }
 
-  async updateRole(workspaceId: string, userId: string, role: Role): Promise<WorkspaceMember> {
+  async upsertActive(workspaceId: string, userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
+    const existing = await this.repository.findOne({ where: { user_id: userId, workspace_id: workspaceId } });
+    if (existing) {
+      existing.role = role;
+      existing.membership_status = MembershipStatus.ACTIVE;
+      existing.left_at = null;
+      return this.repository.save(existing);
+    }
+    return this.add(workspaceId, userId, role);
+  }
+
+  async updateRole(workspaceId: string, userId: string, role: WorkspaceRole): Promise<WorkspaceMember> {
     const member = await this.findByUserAndWorkspace(userId, workspaceId);
     if (!member) throw new NotFoundError('Member not found');
     member.role = role;
     return this.repository.save(member);
   }
 
-  async remove(workspaceId: string, userId: string): Promise<void> {
-    const result = await this.repository.delete({ user_id: userId, workspace_id: workspaceId });
-    if (!result.affected) throw new NotFoundError('Member not found');
+  async remove(
+    workspaceId: string,
+    userId: string,
+    status: MembershipStatus.LEFT | MembershipStatus.REMOVED = MembershipStatus.REMOVED,
+  ): Promise<void> {
+    const member = await this.findByUserAndWorkspace(userId, workspaceId);
+    if (!member) throw new NotFoundError('Member not found');
+    member.membership_status = status;
+    member.left_at = new Date();
+    await this.repository.save(member);
   }
 }

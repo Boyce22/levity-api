@@ -1,10 +1,10 @@
 import { Entity, Column, ManyToOne, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { Card } from './card.entity';
+import { Issue } from './issue.entity';
 import { Sprint } from './sprint.entity';
 
-@Entity('sprint_cards')
-export class SprintCard {
+@Entity('sprint_issues')
+export class SprintIssue {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
@@ -12,7 +12,7 @@ export class SprintCard {
   sprint_id!: string;
 
   @Column({ type: 'uuid' })
-  card_id!: string;
+  issue_id!: string;
 
   @Column({ type: 'int', default: 0 })
   position!: number;
@@ -21,20 +21,20 @@ export class SprintCard {
   added_at!: Date;
 
   @Column({ type: 'timestamptz', nullable: true })
-  removed_at?: Date;
+  removed_at?: Date | null;
 
   @Column({ type: 'uuid', nullable: true })
-  moved_to_sprint_id?: string;
+  moved_to_sprint_id?: string | null;
 
-  @ManyToOne(() => Sprint, (s) => s.sprint_cards, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Sprint, (s) => s.sprint_issues, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sprint_id' })
   sprint!: Sprint;
 
-  @ManyToOne(() => Card, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'card_id' })
-  card!: Card;
+  @ManyToOne(() => Issue, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'issue_id' })
+  issue!: Issue;
 
   @ManyToOne(() => Sprint, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'moved_to_sprint_id' })
-  moved_to_sprint?: Sprint;
+  moved_to_sprint?: Sprint | null;
 }

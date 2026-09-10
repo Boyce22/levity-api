@@ -1,65 +1,67 @@
-import { BadRequestError, ConflictError } from '../../shared/index';
+import { BadRequestError, ConflictError, NotFoundError } from '../../shared/index';
 import type {
   CreateSprintInput,
   UpdateSprintInput,
   CompleteSprintInput,
-  ReorderSprintCardsInput,
+  ReorderSprintIssuesInput,
   SprintResponse,
-  SprintCardResponse,
+  SprintIssueResponse,
 } from '../../contracts/index';
-import type {
+import {
   Sprint,
-  SprintCard,
+  SprintIssue,
   SprintRepository,
-  WorkspaceMemberRepository,
+  type BoardMemberRepository,
+  type TransactionManager,
 } from '../../db/index';
 
 export class SprintService {
   constructor(
     private readonly sprintRepository: SprintRepository,
-    private readonly memberRepository: WorkspaceMemberRepository,
+    private readonly memberRepository: BoardMemberRepository,
+    private readonly transactionManager: TransactionManager,
   ) {}
 
-  async getSprintsByWorkspace(workspaceId: string, userId: string): Promise<SprintResponse[]> {
-    await this.memberRepository.assertMember(userId, workspaceId);
-    const sprints = await this.sprintRepository.findByWorkspace(workspaceId);
+  async getSprintsByBoard(boardId: string, userId: string): Promise<SprintResponse[]> {
+    await this.memberRepository.assertMember(userId, boardId);
+    const sprints = await this.sprintRepository.findByBoard(boardId);
     return sprints.map((s) => toSprintResponse(s));
   }
 
-  async getSprintById(sprintId: string, userId: string): Promise<SprintResponse> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
-    const sprintCards = await this.sprintRepository.findSprintCards(sprintId);
-    return toSprintResponse(sprint, sprintCards);
+  async getSprintById(boardId: string, sprintId: string, userId: string): Promise<SprintResponse> {
+    await this.memberRepository.assertMember(userId, boardId);
+    const sprint = await this.requireSprintOnBoard(boardId, sprintId);
+    const sprintIssues = await this.sprintRepository.findSprintIssues(sprintId);
+    return toSprintResponse(sprint, sprintIssues);
   }
 
-  async getActiveSprint(workspaceId: string, userId: string): Promise<SprintResponse | null> {
-    await this.memberRepository.assertMember(userId, workspaceId);
-    const sprint = await this.sprintRepository.findActiveByWorkspace(workspaceId);
+  async getActiveSprint(boardId: string, userId: string): Promise<SprintResponse | null> {
+    await this.memberRepository.assertMember(userId, boardId);
+    const sprint = await this.sprintRepository.findActiveByBoard(boardId);
     if (!sprint) return null;
     return toSprintResponse(sprint);
   }
 
-  async createSprint(workspaceId: string, data: CreateSprintInput, userId: string): Promise<SprintResponse> {
-    await this.memberRepository.assertMember(userId, workspaceId);
+  async createSprint(boardId: string, data: CreateSprintInput, userId: string): Promise<SprintResponse> {
+    await this.memberRepository.assertWrite(userId, boardId);
     const sprint = await this.sprintRepository.create({
       ...data,
-      workspace_id: workspaceId,
+      board_id: boardId,
       created_by: userId,
     });
     return toSprintResponse(sprint);
   }
 
-  async updateSprint(sprintId: string, data: UpdateSprintInput, userId: string): Promise<SprintResponse> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
+  async updateSprint(boardId: string, sprintId: string, data: UpdateSprintInput, userId: string): Promise<SprintResponse> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    await this.requireSprintOnBoard(boardId, sprintId);
     const updated = await this.sprintRepository.update(sprintId, data);
     return toSprintResponse(updated);
   }
 
-  async deleteSprint(sprintId: string, userId: string): Promise<void> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
+  async deleteSprint(boardId: string, sprintId: string, userId: string): Promise<void> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
     if (sprint.status !== 'planning') {
       throw new BadRequestError('Only sprints with status "planning" can be deleted');
@@ -68,103 +70,135 @@ export class SprintService {
     await this.sprintRepository.delete(sprintId);
   }
 
-  async activateSprint(sprintId: string, userId: string): Promise<SprintResponse> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
+  async activateSprint(boardId: string, sprintId: string, userId: string): Promise<SprintResponse> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
     if (sprint.status !== 'planning') {
       throw new BadRequestError('Only sprints with status "planning" can be activated');
     }
 
-    const activeSprint = await this.sprintRepository.findActiveByWorkspace(sprint.workspace_id);
+    const activeSprint = await this.sprintRepository.findActiveByBoard(boardId);
     if (activeSprint) {
-      throw new ConflictError('There is already an active sprint in this workspace');
+      throw new ConflictError('already an active sprint on this board');
     }
 
     const updated = await this.sprintRepository.update(sprintId, { status: 'active' });
     return toSprintResponse(updated);
   }
 
-  async completeSprint(sprintId: string, data: CompleteSprintInput, userId: string): Promise<SprintResponse> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
+  async completeSprint(
+    boardId: string,
+    sprintId: string,
+    data: CompleteSprintInput,
+    userId: string,
+  ): Promise<SprintResponse> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
     if (sprint.status !== 'active') {
       throw new BadRequestError('Only active sprints can be completed');
     }
 
-    const sprintCards = await this.sprintRepository.findSprintCards(sprintId);
-    const completedCards = sprintCards.filter((sc) => (sc.card?.progress ?? 0) === 100);
-
-    let velocityPoints: number;
-    switch (sprint.tracking_mode) {
-      case 'points':
-        velocityPoints = completedCards.reduce((sum, sc) => sum + (sc.card?.story_points ?? 0), 0);
-        break;
-      case 'hours':
-        velocityPoints = completedCards.reduce((sum, sc) => sum + (sc.card?.estimated_hours ?? 0), 0);
-        break;
-      case 'count':
-      default:
-        velocityPoints = completedCards.length;
-    }
-
     if (data.to_sprint_id) {
-      const toSprintId = data.to_sprint_id;
-      const incompleteCards = sprintCards.filter((sc) => (sc.card?.progress ?? 0) < 100);
-      await Promise.all(
-        incompleteCards.map((sc) => this.sprintRepository.carryOverCard(sprintId, toSprintId, sc.card_id)),
-      );
+      await this.requireSprintOnBoard(boardId, data.to_sprint_id);
     }
 
-    const updated = await this.sprintRepository.update(sprintId, {
-      status: 'completed',
-      velocity_points: velocityPoints,
+    const updated = await this.transactionManager.runInTransaction(async (manager) => {
+      const sprintRepository = new SprintRepository(
+        manager.getRepository(Sprint),
+        manager.getRepository(SprintIssue),
+      );
+
+      const sprintIssues = await sprintRepository.findSprintIssues(sprintId);
+      const completedIssues = sprintIssues.filter((si) => (si.issue?.progress ?? 0) === 100);
+
+      let velocityPoints: number;
+      switch (sprint.tracking_mode) {
+        case 'points':
+          velocityPoints = completedIssues.reduce((sum, si) => sum + (si.issue?.story_points ?? 0), 0);
+          break;
+        case 'hours':
+          velocityPoints = completedIssues.reduce((sum, si) => sum + (si.issue?.estimated_hours ?? 0), 0);
+          break;
+        case 'count':
+        default:
+          velocityPoints = completedIssues.length;
+      }
+
+      if (data.to_sprint_id) {
+        const toSprintId = data.to_sprint_id;
+        const incompleteIssues = sprintIssues.filter((si) => (si.issue?.progress ?? 0) < 100);
+        for (const si of incompleteIssues) {
+          await sprintRepository.carryOverIssue(sprintId, toSprintId, si.issue_id);
+        }
+      }
+
+      return sprintRepository.update(sprintId, {
+        status: 'completed',
+        velocity_points: velocityPoints,
+      });
     });
 
     return toSprintResponse(updated);
   }
 
-  async addCardToSprint(sprintId: string, cardId: string, userId: string): Promise<SprintCardResponse> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
+  async addIssueToSprint(
+    boardId: string,
+    sprintId: string,
+    issueId: string,
+    userId: string,
+    position?: number,
+  ): Promise<SprintIssueResponse> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    await this.requireSprintOnBoard(boardId, sprintId);
 
-    const existing = await this.sprintRepository.findCardInActiveSprint(cardId);
+    const existing = await this.sprintRepository.findIssueInActiveSprint(issueId);
     if (existing && existing.sprint_id !== sprintId) {
-      throw new ConflictError('Card is already assigned to another active sprint');
+      throw new ConflictError('Issue is already assigned to another active sprint');
     }
 
-    const lastCards = await this.sprintRepository.findSprintCards(sprintId);
-    const position = lastCards.length > 0 ? Math.max(...lastCards.map((sc) => sc.position)) + 1 : 0;
+    let nextPosition = position;
+    if (nextPosition === undefined) {
+      const lastIssues = await this.sprintRepository.findSprintIssues(sprintId);
+      nextPosition = lastIssues.length > 0 ? Math.max(...lastIssues.map((si) => si.position)) + 1 : 0;
+    }
 
-    const sc = await this.sprintRepository.addCard(sprintId, cardId, position);
-    return toSprintCardResponse(sc);
+    const si = await this.sprintRepository.addIssue(sprintId, issueId, nextPosition);
+    return toSprintIssueResponse(si);
   }
 
-  async removeCardFromSprint(sprintId: string, cardId: string, userId: string): Promise<void> {
-    const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
-    await this.sprintRepository.removeCard(sprintId, cardId);
+  async removeIssueFromSprint(boardId: string, sprintId: string, issueId: string, userId: string): Promise<void> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    await this.requireSprintOnBoard(boardId, sprintId);
+    await this.sprintRepository.removeIssue(sprintId, issueId);
   }
 
-  async reorderSprintCards(
+  async reorderSprintIssues(
+    boardId: string,
     sprintId: string,
-    updates: ReorderSprintCardsInput,
+    updates: ReorderSprintIssuesInput,
     userId: string,
   ): Promise<void> {
+    await this.memberRepository.assertWrite(userId, boardId);
+    await this.requireSprintOnBoard(boardId, sprintId);
+    await this.sprintRepository.reorderIssues(sprintId, updates);
+  }
+
+  private async requireSprintOnBoard(boardId: string, sprintId: string): Promise<Sprint> {
     const sprint = await this.sprintRepository.findByIdOrFail(sprintId);
-    await this.memberRepository.assertMember(userId, sprint.workspace_id);
-    await this.sprintRepository.reorderCards(sprintId, updates);
+    if (sprint.board_id !== boardId) throw new NotFoundError('Sprint not found');
+    return sprint;
   }
 }
 
-function toSprintResponse(sprint: Sprint, sprintCards: SprintCard[] = []): SprintResponse {
-  const total = sprintCards.length;
-  const completed = sprintCards.filter((sc) => (sc.card?.progress ?? 0) === 100).length;
+function toSprintResponse(sprint: Sprint, sprintIssues: SprintIssue[] = []): SprintResponse {
+  const total = sprintIssues.length;
+  const completed = sprintIssues.filter((si) => (si.issue?.progress ?? 0) === 100).length;
 
   return {
     id: sprint.id,
-    workspace_id: sprint.workspace_id,
+    board_id: sprint.board_id,
     name: sprint.name,
     goal: sprint.goal ?? undefined,
     start_date: sprint.start_date,
@@ -172,30 +206,30 @@ function toSprintResponse(sprint: Sprint, sprintCards: SprintCard[] = []): Sprin
     status: sprint.status,
     tracking_mode: sprint.tracking_mode,
     capacity_points: sprint.capacity_points ?? undefined,
-    velocity_points: sprint.velocity_points,
+    velocity_points: sprint.velocity_points ?? undefined,
     created_by: sprint.created_by,
     created_at: sprint.created_at.toISOString(),
-    cards: sprintCards.length > 0 ? sprintCards.map(toSprintCardResponse) : undefined,
-    total_cards: total,
-    completed_cards: completed,
+    issues: sprintIssues.length > 0 ? sprintIssues.map(toSprintIssueResponse) : undefined,
+    total_issues: total,
+    completed_issues: completed,
     progress_percent: total > 0 ? Math.round((completed / total) * 100) : 0,
   };
 }
 
-function toSprintCardResponse(sc: SprintCard): SprintCardResponse {
+function toSprintIssueResponse(si: SprintIssue): SprintIssueResponse {
   return {
-    id: sc.id,
-    sprint_id: sc.sprint_id,
-    card_id: sc.card_id,
-    position: sc.position,
-    added_at: sc.added_at.toISOString(),
-    moved_to_sprint_id: sc.moved_to_sprint_id,
-    card: {
-      id: sc.card?.id ?? sc.card_id,
-      content: sc.card?.content ?? '',
-      story_points: sc.card?.story_points,
-      estimated_hours: sc.card?.estimated_hours,
-      list_id: sc.card?.list_id ?? '',
+    id: si.id,
+    sprint_id: si.sprint_id,
+    issue_id: si.issue_id,
+    position: si.position,
+    added_at: si.added_at.toISOString(),
+    moved_to_sprint_id: si.moved_to_sprint_id ?? undefined,
+    issue: {
+      id: si.issue?.id ?? si.issue_id,
+      content: si.issue?.content ?? '',
+      story_points: si.issue?.story_points ?? undefined,
+      estimated_hours: si.issue?.estimated_hours ?? undefined,
+      column_id: si.issue?.column_id ?? '',
     },
   };
 }

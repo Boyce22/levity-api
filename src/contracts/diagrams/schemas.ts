@@ -18,7 +18,7 @@ const diagramElementSchema = Type.Object({
 });
 
 export const saveDiagramSchema = Type.Object({
-  card_id: uuidSchema,
+  issue_id: uuidSchema,
   data: Type.Object({
     elements: Type.Array(diagramElementSchema, { maxItems: 1000 }),
   }),

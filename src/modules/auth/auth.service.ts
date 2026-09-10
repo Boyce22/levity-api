@@ -1,7 +1,7 @@
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import type { Logger } from 'pino';
-import type { AuthTokens } from '../../contracts';
+import { AccountStatus, type AuthTokens } from '../../contracts';
 import { UnauthorizedError } from '../../shared';
 import type { UserRepository } from '../../db';
 
@@ -16,10 +16,12 @@ export class AuthService {
   async login(username: string, password: string): Promise<AuthTokens> {
     const user = await this.userRepository.findByUsername(username);
     if (!user) throw new UnauthorizedError('Invalid credentials');
+    if (user.account_status !== AccountStatus.ACTIVE) throw new UnauthorizedError('Invalid credentials');
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedError('Invalid credentials');
 
+    await this.userRepository.touchLastLogin(user.id);
     const accessToken = this.signToken(user.id, user.username);
     this.logger.info({ userId: user.id }, 'User logged in');
     return { accessToken, user: { id: user.id, username: user.username } };
@@ -28,6 +30,7 @@ export class AuthService {
   async register(username: string, password: string, email?: string): Promise<AuthTokens> {
     const hashed = await bcrypt.hash(password, 12);
     const user = await this.userRepository.create({ username, password: hashed, email });
+    await this.userRepository.touchLastLogin(user.id);
 
     const accessToken = this.signToken(user.id, user.username);
     this.logger.info({ userId: user.id }, 'User registered');

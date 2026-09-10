@@ -1,20 +1,26 @@
 import { env } from './config';
 import { createLogger, type Logger } from './shared';
 import {
-  Card,
-  CardHistory,
-  CardHistoryRepository,
-  CardRepository,
-  Comment,
-  CommentRepository,
-  Diagram,
-  DiagramRepository,
-  List,
-  ListRepository,
+  Board,
+  BoardColumn,
+  BoardColumnRepository,
+  BoardMember,
+  BoardMemberRepository,
+  BoardRepository,
+  InviteBoardGrant,
+  InviteBoardGrantRepository,
+  Issue,
+  IssueComment,
+  IssueCommentRepository,
+  IssueDiagram,
+  IssueDiagramRepository,
+  IssueEvent,
+  IssueEventRepository,
+  IssueRepository,
   Notification,
   NotificationRepository,
   Sprint,
-  SprintCard,
+  SprintIssue,
   SprintRepository,
   TransactionManager,
   User,
@@ -91,17 +97,20 @@ export function createApiContainer(): ApiContainer {
   const workspaceRepository = new WorkspaceRepository(AppDataSource.getRepository(Workspace));
   const memberRepository = new WorkspaceMemberRepository(AppDataSource.getRepository(WorkspaceMember));
   const inviteRepository = new WorkspaceInviteRepository(AppDataSource.getRepository(WorkspaceInvite));
+  const grantRepository = new InviteBoardGrantRepository(AppDataSource.getRepository(InviteBoardGrant));
   const tagRepository = new WorkspaceTagRepository(AppDataSource.getRepository(WorkspaceTag));
   const priorityRepository = new WorkspacePriorityRepository(AppDataSource.getRepository(WorkspacePriority));
-  const listRepository = new ListRepository(AppDataSource.getRepository(List));
-  const cardRepository = new CardRepository(AppDataSource.getRepository(Card));
-  const cardHistoryRepository = new CardHistoryRepository(AppDataSource.getRepository(CardHistory));
-  const commentRepository = new CommentRepository(AppDataSource.getRepository(Comment));
+  const boardRepository = new BoardRepository(AppDataSource.getRepository(Board));
+  const boardMemberRepository = new BoardMemberRepository(AppDataSource.getRepository(BoardMember));
+  const boardColumnRepository = new BoardColumnRepository(AppDataSource.getRepository(BoardColumn));
+  const issueRepository = new IssueRepository(AppDataSource.getRepository(Issue));
+  const issueEventRepository = new IssueEventRepository(AppDataSource.getRepository(IssueEvent));
+  const commentRepository = new IssueCommentRepository(AppDataSource.getRepository(IssueComment));
   const notificationRepository = new NotificationRepository(AppDataSource.getRepository(Notification));
-  const diagramRepository = new DiagramRepository(AppDataSource.getRepository(Diagram));
+  const diagramRepository = new IssueDiagramRepository(AppDataSource.getRepository(IssueDiagram));
   const sprintRepository = new SprintRepository(
     AppDataSource.getRepository(Sprint),
-    AppDataSource.getRepository(SprintCard),
+    AppDataSource.getRepository(SprintIssue),
   );
 
   const authService = new AuthService(
@@ -124,12 +133,19 @@ export function createApiContainer(): ApiContainer {
     workspaceRepository,
     memberRepository,
     inviteRepository,
+    grantRepository,
+    priorityRepository,
+    boardRepository,
+    boardMemberRepository,
+    boardColumnRepository,
     transactionManager,
     logger.child({ name: 'workspaces' }),
   );
   const membersService = new MembersService(
     memberRepository,
     inviteRepository,
+    grantRepository,
+    boardMemberRepository,
     transactionManager,
     logger.child({ name: 'members' }),
   );
@@ -140,30 +156,32 @@ export function createApiContainer(): ApiContainer {
     logger.child({ name: 'settings' }),
   );
   const boardService = new BoardService(
-    listRepository,
-    cardRepository,
-    memberRepository,
-    workspaceRepository,
-    cardHistoryRepository,
+    boardRepository,
+    boardColumnRepository,
+    issueRepository,
+    issueEventRepository,
+    boardMemberRepository,
+    priorityRepository,
     filesService,
     transactionManager,
     logger.child({ name: 'boards' }),
+    tagRepository,
   );
-  const sprintService = new SprintService(sprintRepository, memberRepository);
+  const sprintService = new SprintService(sprintRepository, boardMemberRepository, transactionManager);
   const commentsService = new CommentsService(
     commentRepository,
-    cardRepository,
-    listRepository,
-    memberRepository,
+    issueRepository,
+    boardColumnRepository,
+    boardMemberRepository,
     transactionManager,
     logger.child({ name: 'comments' }),
   );
   const notificationsService = new NotificationsService(notificationRepository);
   const diagramsService = new DiagramsService(
     diagramRepository,
-    cardRepository,
-    listRepository,
-    memberRepository,
+    issueRepository,
+    boardColumnRepository,
+    boardMemberRepository,
   );
 
   return {

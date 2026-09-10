@@ -1,189 +1,198 @@
 import type { Logger } from 'pino';
 import type {
-  CreateListInput,
-  UpdateListInput,
-  UpdateListPositionsInput,
-  CreateCardInput,
-  UpdateCardInput,
-  UpdateCardPositionsInput,
+  CreateColumnInput,
+  UpdateColumnInput,
+  UpdateColumnPositionsInput,
+  CreateIssueInput,
+  UpdateIssueInput,
+  UpdateIssuePositionsInput,
+} from '../../contracts/boards/schemas';
+import type {
   BoardDataResponse,
-  ListWithCardsResponse,
-  CardResponse,
-  CardHistoryResponse,
-} from '../../contracts/index';
+  BoardColumnResponse,
+  IssueResponse,
+  IssueEventResponse,
+} from '../../contracts/boards/dtos';
+import { BadRequestError, NotFoundError } from '../../shared/index';
 import {
-  Card,
-  CardHistory,
-  List,
-  CardHistoryRepository,
-  CardRepository,
-  ListRepository,
-  WorkspaceMember,
-  WorkspaceMemberRepository,
-  type CardWithCount,
+  BoardColumn,
+  BoardMember,
+  Issue,
+  IssueEvent,
+  BoardColumnRepository,
+  BoardMemberRepository,
+  BoardRepository,
+  IssueEventRepository,
+  IssueRepository,
+  type IssueWithCount,
   type TransactionManager,
-  type WorkspaceRepository,
+  type WorkspacePriorityRepository,
+  type WorkspaceTagRepository,
 } from '../../db/index';
 import type { FilesService } from '../files/files.service';
 
 const TRACKED_FIELDS = [
   'content',
   'description',
-  'priority',
-  'label',
   'progress',
   'due_date',
   'cover_url',
   'story_points',
   'estimated_hours',
+  'priority_id',
+  'tag_id',
 ] as const;
 
 type TrackedField = (typeof TRACKED_FIELDS)[number];
 
 export class BoardService {
   constructor(
-    private readonly listRepository: ListRepository,
-    private readonly cardRepository: CardRepository,
-    private readonly memberRepository: WorkspaceMemberRepository,
-    private readonly workspaceRepository: WorkspaceRepository,
-    private readonly cardHistoryRepository: CardHistoryRepository,
+    private readonly boardRepository: BoardRepository,
+    private readonly boardColumnRepository: BoardColumnRepository,
+    private readonly issueRepository: IssueRepository,
+    private readonly issueEventRepository: IssueEventRepository,
+    private readonly boardMemberRepository: BoardMemberRepository,
+    private readonly priorityRepository: WorkspacePriorityRepository,
     private readonly filesService: FilesService,
     private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
+    private readonly tagRepository: WorkspaceTagRepository,
   ) {}
 
-  async getBoardData(userId: string, workspaceId: string): Promise<BoardDataResponse> {
-    await this.memberRepository.assertMember(userId, workspaceId);
+  async getBoardData(userId: string, boardId: string): Promise<BoardDataResponse> {
+    const board = await this.boardRepository.findByIdOrFail(boardId);
+    await this.boardMemberRepository.assertMember(userId, boardId);
 
-    const [fullData, lists] = await Promise.all([
-      this.workspaceRepository.findFullData(workspaceId),
-      this.listRepository.findByWorkspace(workspaceId),
-    ]);
-
-    const { workspace, members, tags, priorities } = fullData;
-    const allCards = lists.flatMap((l) => l.cards ?? []);
-    const coverKeys = allCards.filter((c) => c.cover_url).map((c) => c.cover_url!);
+    const columns = await this.boardColumnRepository.findByBoard(boardId);
+    const allIssues = columns.flatMap((c) => c.issues ?? []);
+    const coverKeys = allIssues.filter((i) => i.cover_url).map((i) => i.cover_url!);
     const coverUrlMap = await this.filesService.resolveUrls(coverKeys);
 
     return {
-      workspace: {
-        id: workspace.id,
-        name: workspace.name,
-        created_by: workspace.created_by,
-        created_at: workspace.created_at.toISOString(),
-        updated_at: workspace.updated_at.toISOString(),
+      board: {
+        id: board.id,
+        workspace_id: board.workspace_id,
+        name: board.name,
+        position: board.position,
+        created_at: board.created_at.toISOString(),
+        updated_at: board.updated_at.toISOString(),
       },
-      lists: lists.map((l) => toListWithCardsResponse(l, coverUrlMap)),
-      members: members.map((m) => ({
-        id: m.id,
-        workspace_id: m.workspace_id,
-        user_id: m.user_id,
-        role: m.role,
-        joined_at: m.joined_at.toISOString(),
-      })),
-      tags: tags.map((t) => ({
-        id: t.id,
-        workspace_id: t.workspace_id,
-        name: t.name,
-        color: t.color,
-        created_at: t.created_at.toISOString(),
-      })),
-      priorities: priorities.map((p) => ({
-        id: p.id,
-        workspace_id: p.workspace_id,
-        name: p.name,
-        color: p.color,
-        icon: p.icon,
-        position: p.position,
-        created_at: p.created_at.toISOString(),
-      })),
+      columns: columns.map((c) => toBoardColumnResponse(c, coverUrlMap)),
     };
   }
 
-  async createList(userId: string, workspaceId: string, input: CreateListInput): Promise<ListWithCardsResponse> {
-    await this.memberRepository.assertMember(userId, workspaceId);
-    const list = await this.listRepository.create(userId, { ...input, workspace_id: workspaceId });
-    return toListWithCardsResponse(list);
+  async createColumn(userId: string, boardId: string, input: CreateColumnInput): Promise<BoardColumnResponse> {
+    await this.boardRepository.findByIdOrFail(boardId);
+    await this.boardMemberRepository.assertWrite(userId, boardId);
+    const column = await this.boardColumnRepository.create(userId, { ...input, board_id: boardId });
+    return toBoardColumnResponse(column);
   }
 
-  async updateList(userId: string, listId: string, input: UpdateListInput): Promise<ListWithCardsResponse> {
-    const list = await this.listRepository.findByIdOrFail(listId);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
-    const updated = await this.listRepository.update(listId, input);
-    return toListWithCardsResponse(updated);
+  async updateColumn(userId: string, boardId: string, columnId: string, input: UpdateColumnInput): Promise<BoardColumnResponse> {
+    const column = await this.requireColumnOnBoard(columnId, boardId);
+    await this.boardMemberRepository.assertWrite(userId, column.board_id);
+    const updated = await this.boardColumnRepository.update(columnId, input);
+    return toBoardColumnResponse(updated);
   }
 
-  async updateListPositions(userId: string, workspaceId: string, updates: UpdateListPositionsInput): Promise<void> {
-    await this.memberRepository.assertMember(userId, workspaceId);
-    await this.listRepository.updatePositions(updates);
+  async updateColumnPositions(userId: string, boardId: string, updates: UpdateColumnPositionsInput): Promise<void> {
+    await this.boardRepository.findByIdOrFail(boardId);
+    await this.boardMemberRepository.assertWrite(userId, boardId);
+    await this.boardColumnRepository.updatePositions(updates);
   }
 
-  async deleteList(userId: string, listId: string): Promise<void> {
-    const list = await this.listRepository.findByIdOrFail(listId);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
-    await this.listRepository.delete(listId);
-    this.logger.info({ listId, userId }, 'List deleted');
+  async deleteColumn(userId: string, boardId: string, columnId: string): Promise<void> {
+    const column = await this.requireColumnOnBoard(columnId, boardId);
+    await this.boardMemberRepository.assertWrite(userId, column.board_id);
+    await this.boardColumnRepository.delete(columnId);
+    this.logger.info({ columnId, userId }, 'Column deleted');
   }
 
-  async createCard(userId: string, input: CreateCardInput): Promise<CardResponse> {
-    const list = await this.listRepository.findByIdOrFail(input.list_id);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
+  async createIssue(userId: string, boardId: string, input: CreateIssueInput): Promise<IssueResponse> {
+    const column = await this.requireColumnOnBoard(input.column_id, boardId);
+    const board = await this.boardRepository.findByIdOrFail(column.board_id);
+    await this.boardMemberRepository.assertWrite(userId, board.id);
 
-    const card = await this.transactionManager.runInTransaction(async (manager) => {
-      const cardRepository = new CardRepository(manager.getRepository(Card));
-      const cardHistoryRepository = new CardHistoryRepository(manager.getRepository(CardHistory));
-      const createdCard = await cardRepository.create(userId, input);
-      await cardHistoryRepository.record({
-        card_id: createdCard.id,
+    const priorityId = input.priority_id ?? (await this.defaultPriorityId(board.workspace_id));
+    await this.assertPriorityInWorkspace(board.workspace_id, priorityId);
+    if (input.tag_id) {
+      await this.assertTagInWorkspace(board.workspace_id, input.tag_id);
+    }
+
+    const issue = await this.transactionManager.runInTransaction(async (manager) => {
+      const issueRepository = new IssueRepository(manager.getRepository(Issue));
+      const issueEventRepository = new IssueEventRepository(manager.getRepository(IssueEvent));
+      const created = await issueRepository.create(userId, {
+        content: input.content,
+        column_id: input.column_id,
+        position: input.position,
+        priority_id: priorityId,
+        tag_id: input.tag_id,
+      });
+      await issueEventRepository.record({
+        issue_id: created.id,
         created_by: userId,
         action_type: 'created',
-        field: 'card',
+        field: 'issue',
       });
-      return createdCard;
+      return created;
     });
 
-    const response = toCardResponse(card);
-    response.cover_url = await this.filesService.resolveUrl(card.cover_url);
-    return response;
+    return this.toIssueResponseWithCover(issue);
   }
 
-  async updateCard(userId: string, cardId: string, input: UpdateCardInput): Promise<CardResponse> {
-    const card = await this.cardRepository.findByIdOrFail(cardId);
-    const list = await this.listRepository.findByIdOrFail(card.list_id);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
+  async updateIssue(userId: string, boardId: string, issueId: string, input: UpdateIssueInput): Promise<IssueResponse> {
+    const issue = await this.issueRepository.findByIdOrFail(issueId);
+    const column = await this.requireColumnOnBoard(issue.column_id, boardId);
+    const board = await this.boardRepository.findByIdOrFail(column.board_id);
+    await this.boardMemberRepository.assertWrite(userId, board.id);
 
-    const historyEntries: Array<Parameters<CardHistoryRepository['record']>[0]> = [];
+    let workspaceId = board.workspace_id;
+    const historyEntries: Array<Parameters<IssueEventRepository['record']>[0]> = [];
 
-    if (input.assignee_id !== undefined && input.assignee_id !== card.assignee_id) {
+    if (input.assignee_id !== undefined && input.assignee_id !== issue.assignee_id) {
       historyEntries.push({
-        card_id: cardId,
+        issue_id: issueId,
         created_by: userId,
         action_type: 'assigned',
         field: 'assignee',
-        old_val: card.assignee_id ?? undefined,
+        old_val: issue.assignee_id ?? undefined,
         new_val: input.assignee_id ?? undefined,
       });
     }
 
-    if (input.list_id !== undefined && input.list_id !== card.list_id) {
-      const newList = await this.listRepository.findByIdOrFail(input.list_id);
+    if (input.column_id !== undefined && input.column_id !== issue.column_id) {
+      const newColumn = await this.boardColumnRepository.findByIdOrFail(input.column_id);
+      const newBoard = await this.boardRepository.findByIdOrFail(newColumn.board_id);
+      await this.boardMemberRepository.assertWrite(userId, newBoard.id);
+      workspaceId = newBoard.workspace_id;
       historyEntries.push({
-        card_id: cardId,
+        issue_id: issueId,
         created_by: userId,
         action_type: 'moved',
-        field: newList.title,
+        field: newColumn.title,
       });
     }
 
+    if (input.priority_id !== undefined) {
+      await this.assertPriorityInWorkspace(workspaceId, input.priority_id);
+    }
+    if (input.tag_id) {
+      await this.assertTagInWorkspace(workspaceId, input.tag_id);
+    }
+
+    const dueDate =
+      input.due_date === undefined ? undefined : input.due_date === null ? null : new Date(input.due_date);
+
     for (const field of TRACKED_FIELDS) {
       if (!(field in input) || input[field] === undefined) continue;
-      const oldVal = card[field as TrackedField];
-      const newVal = input[field as TrackedField];
+      const oldVal = issue[field as TrackedField];
+      const newVal = field === 'due_date' ? dueDate : input[field as TrackedField];
       const oldStr = toComparable(oldVal);
       const newStr = toComparable(newVal);
       if (oldStr !== newStr) {
         historyEntries.push({
-          card_id: cardId,
+          issue_id: issueId,
           created_by: userId,
           action_type: 'updated',
           field,
@@ -193,75 +202,96 @@ export class BoardService {
       }
     }
 
+    const patch = {
+      ...(input.content !== undefined ? { content: input.content } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.cover_url !== undefined ? { cover_url: input.cover_url } : {}),
+      ...(input.assignee_id !== undefined ? { assignee_id: input.assignee_id } : {}),
+      ...(input.priority_id !== undefined ? { priority_id: input.priority_id } : {}),
+      ...(input.tag_id !== undefined ? { tag_id: input.tag_id } : {}),
+      ...(input.progress !== undefined ? { progress: input.progress } : {}),
+      ...(dueDate !== undefined ? { due_date: dueDate } : {}),
+      ...(input.column_id !== undefined ? { column_id: input.column_id } : {}),
+      ...(input.position !== undefined ? { position: input.position } : {}),
+      ...(input.story_points !== undefined ? { story_points: input.story_points } : {}),
+      ...(input.estimated_hours !== undefined ? { estimated_hours: input.estimated_hours } : {}),
+    };
+
     const updated = await this.transactionManager.runInTransaction(async (manager) => {
-      const cardRepository = new CardRepository(manager.getRepository(Card));
-      const cardHistoryRepository = new CardHistoryRepository(manager.getRepository(CardHistory));
-      const updatedCard = await cardRepository.update(cardId, input);
+      const issueRepository = new IssueRepository(manager.getRepository(Issue));
+      const issueEventRepository = new IssueEventRepository(manager.getRepository(IssueEvent));
+      const updatedIssue = await issueRepository.update(issueId, patch);
       if (historyEntries.length > 0) {
-        await Promise.all(historyEntries.map((entry) => cardHistoryRepository.record(entry)));
+        await Promise.all(historyEntries.map((entry) => issueEventRepository.record(entry)));
       }
-      return updatedCard;
+      return updatedIssue;
     });
 
-    const response = toCardResponse(updated);
-    response.cover_url = await this.filesService.resolveUrl(updated.cover_url);
-    return response;
+    return this.toIssueResponseWithCover(updated);
   }
 
-  async updateCardPositions(userId: string, workspaceId: string, updates: UpdateCardPositionsInput): Promise<void> {
-    await this.memberRepository.assertMember(userId, workspaceId);
+  async updateIssuePositions(userId: string, boardId: string, updates: UpdateIssuePositionsInput): Promise<void> {
+    await this.boardRepository.findByIdOrFail(boardId);
+    await this.boardMemberRepository.assertWrite(userId, boardId);
 
     await this.transactionManager.runInTransaction(async (manager) => {
-      const cardRepository = new CardRepository(manager.getRepository(Card));
-      const listRepository = new ListRepository(manager.getRepository(List));
-      const cardHistoryRepository = new CardHistoryRepository(manager.getRepository(CardHistory));
-      const memberRepository = new WorkspaceMemberRepository(manager.getRepository(WorkspaceMember));
+      const issueRepository = new IssueRepository(manager.getRepository(Issue));
+      const columnRepository = new BoardColumnRepository(manager.getRepository(BoardColumn));
+      const issueEventRepository = new IssueEventRepository(manager.getRepository(IssueEvent));
+      const memberRepository = new BoardMemberRepository(manager.getRepository(BoardMember));
 
-      await memberRepository.assertMember(userId, workspaceId);
+      await memberRepository.assertWrite(userId, boardId);
 
-      const movingUpdates = updates.filter((u) => u.list_id);
+      const movingUpdates = updates.filter((u) => u.column_id);
       if (movingUpdates.length > 0) {
-        const [currentCards, newLists] = await Promise.all([
-          Promise.all(movingUpdates.map((u) => cardRepository.findById(u.id))),
-          Promise.all([...new Set(movingUpdates.map((u) => u.list_id!))].map((id) => listRepository.findById(id))),
+        const uniqueColumnIds = [...new Set(movingUpdates.map((u) => u.column_id!))];
+        const [currentIssues, newColumns] = await Promise.all([
+          Promise.all(movingUpdates.map((u) => issueRepository.findById(u.id))),
+          Promise.all(uniqueColumnIds.map((id) => columnRepository.findById(id))),
         ]);
 
-        const listTitleMap = new Map(newLists.filter(Boolean).map((l) => [l!.id, l!.title]));
+        for (const col of newColumns) {
+          if (!col || col.board_id !== boardId) {
+            throw new BadRequestError('Column does not belong to this board');
+          }
+        }
+
+        const columnTitleMap = new Map(newColumns.filter(Boolean).map((c) => [c!.id, c!.title]));
 
         await Promise.all(
           movingUpdates
-            .map((update, i) => ({ update, card: currentCards[i] }))
-            .filter(({ update, card }) => card && card.list_id !== update.list_id)
+            .map((update, i) => ({ update, issue: currentIssues[i] }))
+            .filter(({ update, issue }) => issue && issue.column_id !== update.column_id)
             .map(({ update }) =>
-              cardHistoryRepository.record({
-                card_id: update.id,
+              issueEventRepository.record({
+                issue_id: update.id,
                 created_by: userId,
                 action_type: 'moved',
-                field: listTitleMap.get(update.list_id!) ?? update.list_id!,
+                field: columnTitleMap.get(update.column_id!) ?? update.column_id!,
               }),
             ),
         );
       }
 
-      await cardRepository.updatePositions(updates);
+      await issueRepository.updatePositions(updates);
     });
   }
 
-  async deleteCard(userId: string, cardId: string): Promise<void> {
-    const card = await this.cardRepository.findByIdOrFail(cardId);
-    const list = await this.listRepository.findByIdOrFail(card.list_id);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
-    await this.cardRepository.delete(cardId);
-    this.logger.info({ cardId, userId }, 'Card deleted');
+  async deleteIssue(userId: string, boardId: string, issueId: string): Promise<void> {
+    const issue = await this.issueRepository.findByIdOrFail(issueId);
+    const column = await this.requireColumnOnBoard(issue.column_id, boardId);
+    await this.boardMemberRepository.assertWrite(userId, column.board_id);
+    await this.issueRepository.delete(issueId);
+    this.logger.info({ issueId, userId }, 'Issue deleted');
   }
 
-  async getCardHistory(userId: string, cardId: string): Promise<CardHistoryResponse[]> {
-    const card = await this.cardRepository.findByIdOrFail(cardId);
-    const list = await this.listRepository.findByIdOrFail(card.list_id);
-    await this.memberRepository.assertMember(userId, list.workspace_id);
-    const history = await this.cardHistoryRepository.findByCard(cardId);
+  async getIssueEvents(userId: string, boardId: string, issueId: string): Promise<IssueEventResponse[]> {
+    const issue = await this.issueRepository.findByIdOrFail(issueId);
+    const column = await this.requireColumnOnBoard(issue.column_id, boardId);
+    await this.boardMemberRepository.assertMember(userId, column.board_id);
+    const events = await this.issueEventRepository.findByIssue(issueId);
 
-    return history.map((h) => ({
+    return events.map((h) => ({
       id: h.id,
       created_by: h.created_by,
       action_type: h.action_type,
@@ -269,8 +299,48 @@ export class BoardService {
       old_val: h.old_val,
       new_val: h.new_val,
       created_at: h.created_at.toISOString(),
-      users: h.users,
+      users: h.users
+        ? {
+            id: h.users.id,
+            username: h.users.username,
+            first_name: h.users.first_name,
+            last_name: h.users.last_name,
+            avatar_url: h.users.avatar_url,
+          }
+        : undefined,
     }));
+  }
+
+  private async requireColumnOnBoard(columnId: string, boardId: string): Promise<BoardColumn> {
+    const column = await this.boardColumnRepository.findByIdOrFail(columnId);
+    if (column.board_id !== boardId) throw new NotFoundError('Column not found');
+    return column;
+  }
+
+  private async defaultPriorityId(workspaceId: string): Promise<string> {
+    const priority = await this.priorityRepository.findSystemByCode(workspaceId, 'medium');
+    if (!priority) throw new BadRequestError('Default priority is not configured for this workspace');
+    return priority.id;
+  }
+
+  private async assertPriorityInWorkspace(workspaceId: string, priorityId: string): Promise<void> {
+    const priorities = await this.priorityRepository.findByWorkspace(workspaceId);
+    if (!priorities.some((p) => p.id === priorityId)) {
+      throw new BadRequestError('Priority does not belong to this workspace');
+    }
+  }
+
+  private async assertTagInWorkspace(workspaceId: string, tagId: string): Promise<void> {
+    const tags = await this.tagRepository.findByWorkspace(workspaceId);
+    if (!tags.some((t) => t.id === tagId)) {
+      throw new BadRequestError('Tag does not belong to this workspace');
+    }
+  }
+
+  private async toIssueResponseWithCover(issue: Issue): Promise<IssueResponse> {
+    const response = toIssueResponse(issue);
+    response.cover_url = issue.cover_url ? await this.filesService.resolveUrl(issue.cover_url) : undefined;
+    return response;
   }
 }
 
@@ -280,36 +350,36 @@ function toComparable(value: unknown): string {
   return String(value);
 }
 
-function toListWithCardsResponse(list: List, coverUrlMap = new Map<string, string>()): ListWithCardsResponse {
+function toBoardColumnResponse(column: BoardColumn, coverUrlMap = new Map<string, string>()): BoardColumnResponse {
   return {
-    id: list.id,
-    title: list.title,
-    position: list.position,
-    wip_limit: list.wip_limit,
-    list_type: list.list_type,
-    workspace_id: list.workspace_id,
-    created_at: list.created_at.toISOString(),
-    cards: (list.cards ?? []).map((c) => toCardResponse(c, coverUrlMap)),
+    id: column.id,
+    title: column.title,
+    position: column.position,
+    wip_limit: column.wip_limit ?? undefined,
+    column_type: column.column_type ?? undefined,
+    board_id: column.board_id,
+    created_at: column.created_at.toISOString(),
+    issues: (column.issues ?? []).map((i) => toIssueResponse(i, coverUrlMap)),
   };
 }
 
-function toCardResponse(card: Card, coverUrlMap = new Map<string, string>()): CardResponse {
+function toIssueResponse(issue: Issue, coverUrlMap = new Map<string, string>()): IssueResponse {
   return {
-    id: card.id,
-    content: card.content,
-    position: card.position,
-    description: card.description,
-    cover_url: card.cover_url ? coverUrlMap.get(card.cover_url) : undefined,
-    assignee_id: card.assignee_id,
-    priority: card.priority,
-    label: card.label,
-    progress: card.progress,
-    due_date: card.due_date?.toISOString(),
-    list_id: card.list_id,
-    created_by: card.created_by,
-    created_at: card.created_at.toISOString(),
-    comment_count: (card as CardWithCount).comment_count ?? 0,
-    story_points: card.story_points,
-    estimated_hours: card.estimated_hours,
+    id: issue.id,
+    content: issue.content,
+    position: issue.position,
+    description: issue.description ?? undefined,
+    cover_url: issue.cover_url ? coverUrlMap.get(issue.cover_url) : undefined,
+    assignee_id: issue.assignee_id ?? undefined,
+    priority_id: issue.priority_id,
+    tag_id: issue.tag_id ?? undefined,
+    progress: issue.progress ?? undefined,
+    due_date: issue.due_date?.toISOString(),
+    column_id: issue.column_id,
+    created_by: issue.created_by,
+    created_at: issue.created_at.toISOString(),
+    comment_count: (issue as IssueWithCount).comment_count ?? 0,
+    story_points: issue.story_points ?? undefined,
+    estimated_hours: issue.estimated_hours ?? undefined,
   };
 }

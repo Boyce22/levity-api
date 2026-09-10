@@ -4,6 +4,14 @@ import { dateOnlySchema, uuidSchema } from '../shared/typebox';
 
 const dateSchema = dateOnlySchema();
 
+export const sprintIssueParamsSchema = Type.Object({ sprintId: uuidSchema, issueId: uuidSchema });
+export const boardSprintParamsSchema = Type.Object({ boardId: uuidSchema, sprintId: uuidSchema });
+export const boardSprintIssueParamsSchema = Type.Object({
+  boardId: uuidSchema,
+  sprintId: uuidSchema,
+  issueId: uuidSchema,
+});
+
 export const createSprintSchema = Type.Object({
   name: Type.String({ minLength: 1, maxLength: 100 }),
   goal: Type.Optional(Type.String({ maxLength: 500 })),
@@ -26,12 +34,12 @@ export const completeSprintSchema = Type.Object({
   to_sprint_id: Type.Optional(uuidSchema),
 });
 
-export const addCardToSprintSchema = Type.Object({
-  card_id: uuidSchema,
-  position: Type.Integer({ minimum: 0, default: 0 }),
+export const addIssueToSprintSchema = Type.Object({
+  issue_id: uuidSchema,
+  position: Type.Optional(Type.Integer({ minimum: 0 })),
 });
 
-export const reorderSprintCardsSchema = Type.Array(
+export const reorderSprintIssuesSchema = Type.Array(
   Type.Object({
     id: uuidSchema,
     position: Type.Integer({ minimum: 0 }),
@@ -41,5 +49,5 @@ export const reorderSprintCardsSchema = Type.Array(
 export type CreateSprintInput = Static<typeof createSprintSchema>;
 export type UpdateSprintInput = Static<typeof updateSprintSchema>;
 export type CompleteSprintInput = Static<typeof completeSprintSchema>;
-export type AddCardToSprintInput = Static<typeof addCardToSprintSchema>;
-export type ReorderSprintCardsInput = Static<typeof reorderSprintCardsSchema>;
+export type AddIssueToSprintInput = Static<typeof addIssueToSprintSchema>;
+export type ReorderSprintIssuesInput = Static<typeof reorderSprintIssuesSchema>;

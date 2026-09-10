@@ -1,5 +1,10 @@
-import type { Role } from '../contracts';
-import type { WorkspaceMember, WorkspaceMemberRepository } from '../db';
+import type { WorkspaceRole } from '../contracts';
+import type {
+  BoardMember,
+  BoardMemberRepository,
+  WorkspaceMember,
+  WorkspaceMemberRepository,
+} from '../db';
 
 export function assertMember(
   members: WorkspaceMemberRepository,
@@ -13,7 +18,23 @@ export function assertRole(
   members: WorkspaceMemberRepository,
   userId: string,
   workspaceId: string,
-  ...roles: Role[]
+  ...roles: WorkspaceRole[]
 ): Promise<WorkspaceMember> {
   return members.assertRole(userId, workspaceId, ...roles);
+}
+
+export function assertBoardMember(
+  boardMembers: BoardMemberRepository,
+  userId: string,
+  boardId: string,
+): Promise<BoardMember> {
+  return boardMembers.assertMember(userId, boardId);
+}
+
+export function assertBoardWrite(
+  boardMembers: BoardMemberRepository,
+  userId: string,
+  boardId: string,
+): Promise<BoardMember> {
+  return boardMembers.assertWrite(userId, boardId);
 }

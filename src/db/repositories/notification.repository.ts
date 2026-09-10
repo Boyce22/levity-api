@@ -1,6 +1,14 @@
 import type { Repository } from 'typeorm';
-import type { CreateNotificationInput, QueryNotificationsInput } from '../../contracts/index';
+import type { NotificationType } from '../../contracts/index';
+import type { QueryNotificationsInput } from '../../contracts/index';
 import { type Notification } from '../entities/notification.entity';
+
+export type CreateNotificationData = {
+  user_id: string;
+  actor_id?: string | null;
+  issue_id?: string | null;
+  type: NotificationType;
+};
 
 export class NotificationRepository {
   constructor(private readonly repository: Repository<Notification>) {}
@@ -43,8 +51,8 @@ export class NotificationRepository {
     return { data, total };
   }
 
-  async createMany(notifications: CreateNotificationInput[]): Promise<void> {
-    const entities = this.repository.create(notifications as Partial<Notification>[]);
+  async createMany(notifications: CreateNotificationData[]): Promise<void> {
+    const entities = this.repository.create(notifications);
     await this.repository.save(entities);
   }
 

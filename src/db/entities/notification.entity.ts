@@ -10,17 +10,14 @@ export class Notification {
   @Column({ type: 'uuid' })
   user_id!: string;
 
-  @Column({ type: 'uuid' })
-  actor_id!: string;
+  @Column({ type: 'uuid', nullable: true })
+  actor_id?: string | null;
 
-  @Column({ type: 'uuid' })
-  card_id!: string;
+  @Column({ type: 'uuid', nullable: true })
+  issue_id?: string | null;
 
-  @Column({ type: 'enum', enum: NotificationType })
+  @Column({ type: 'enum', enum: NotificationType, enumName: 'notifications_type_enum' })
   type!: NotificationType;
-
-  @Column({ type: 'text' })
-  content!: string;
 
   @Column({ type: 'boolean', default: false })
   read!: boolean;

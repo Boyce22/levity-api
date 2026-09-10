@@ -6,6 +6,7 @@ import {
   idParamsSchema,
   tokenParamsSchema,
   inviteParamsSchema,
+  workspaceBoardParamsSchema,
 } from '../../contracts';
 import { validateDto } from '../../shared/http';
 import type { MembersService } from './members.service';
@@ -39,6 +40,16 @@ export function workspaceRoutes(
       const { id } = validateDto(idParamsSchema, request.params);
       await workspaceService.delete(request.user.id, id);
       reply.status(204).send();
+    });
+
+    fastify.get('/:id/boards', { preHandler: [authenticate] }, async (request) => {
+      const { id } = validateDto(idParamsSchema, request.params);
+      return workspaceService.getHomeBoards(request.user.id, id);
+    });
+
+    fastify.post('/:id/boards/:boardId/self-grant', { preHandler: [authenticate] }, async (request) => {
+      const { id, boardId } = validateDto(workspaceBoardParamsSchema, request.params);
+      return workspaceService.selfGrantBoard(request.user.id, id, boardId);
     });
 
     fastify.get('/:id/invites', { preHandler: [authenticate] }, async (request) => {

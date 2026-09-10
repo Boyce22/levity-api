@@ -1,19 +1,43 @@
-export enum Role {
+export enum WorkspaceRole {
   OWNER = 'owner',
   ADMIN = 'admin',
   MEMBER = 'member',
+}
+
+export enum BoardRole {
+  ADMIN = 'admin',
   EDITOR = 'editor',
   VIEWER = 'viewer',
 }
 
-export const WRITE_ROLES: Role[] = [Role.OWNER, Role.ADMIN, Role.MEMBER, Role.EDITOR];
-export const MANAGE_ROLES: Role[] = [Role.OWNER, Role.ADMIN];
-export const OWNER_ONLY: Role[] = [Role.OWNER];
-
-export function canWrite(role: Role): boolean {
-  return WRITE_ROLES.includes(role);
+export enum MembershipStatus {
+  ACTIVE = 'active',
+  LEFT = 'left',
+  REMOVED = 'removed',
 }
 
-export function canManage(role: Role): boolean {
-  return MANAGE_ROLES.includes(role);
+export enum AccountStatus {
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+}
+
+export enum WorkspaceStatus {
+  ACTIVE = 'active',
+  ARCHIVED = 'archived',
+}
+
+export enum CatalogStatus {
+  ACTIVE = 'active',
+  ARCHIVED = 'archived',
+}
+
+export const WORKSPACE_MANAGE_ROLES: WorkspaceRole[] = [WorkspaceRole.OWNER, WorkspaceRole.ADMIN];
+export const BOARD_WRITE_ROLES: BoardRole[] = [BoardRole.ADMIN, BoardRole.EDITOR];
+
+export function canManageWorkspace(role: WorkspaceRole): boolean {
+  return WORKSPACE_MANAGE_ROLES.includes(role);
+}
+
+export function canWriteBoard(role: BoardRole): boolean {
+  return BOARD_WRITE_ROLES.includes(role);
 }

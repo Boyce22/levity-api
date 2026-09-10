@@ -1,7 +1,8 @@
 export interface UserResponse {
   id: string;
   username: string;
-  display_name?: string;
+  first_name?: string;
+  last_name?: string;
   avatar_url?: string;
   bio?: string;
   email?: string;
@@ -11,6 +12,7 @@ export interface UserResponse {
 export interface UserPublicResponse {
   id: string;
   username: string;
-  display_name?: string;
+  first_name?: string;
+  last_name?: string;
   avatar_url?: string;
 }

@@ -13,6 +13,32 @@ import type { ApiContainer } from './composition';
 import { createErrorHandler } from './shared/http';
 import { buildRoutes } from './routes';
 
+export const swaggerOptions = {
+  openapi: {
+    info: {
+      title: 'Levity API',
+      description: 'Documentation for the Levity API',
+      version: '0.1.0',
+    },
+    servers: [
+      {
+        url: `http://localhost:${env.PORT}`,
+        description: 'Local development server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http' as const,
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [{ bearerAuth: [] }],
+  },
+};
+
 export async function buildApp(container: ApiContainer): Promise<FastifyInstance> {
   const { logger } = container;
 
@@ -24,31 +50,7 @@ export async function buildApp(container: ApiContainer): Promise<FastifyInstance
     bodyLimit: MAX_IMAGE_SIZE_BYTES,
   });
 
-  await fastify.register(fastifySwagger, {
-    openapi: {
-      info: {
-        title: 'Levity API',
-        description: 'Documentation for the Levity API',
-        version: '0.1.0',
-      },
-      servers: [
-        {
-          url: `http://localhost:${env.PORT}`,
-          description: 'Local development server',
-        },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-          },
-        },
-      },
-      security: [{ bearerAuth: [] }],
-    }
-  });
+  await fastify.register(fastifySwagger, swaggerOptions);
 
   await fastify.register(fastifySwaggerUi, {
     routePrefix: '/docs', 

@@ -12,9 +12,8 @@ export type QueryNotificationsInput = StaticDecode<typeof queryNotificationsSche
 
 export const createNotificationSchema = Type.Object({
   user_id: uuidSchema,
-  actor_id: uuidSchema,
-  card_id: uuidSchema,
+  actor_id: Type.Optional(uuidSchema),
+  issue_id: Type.Optional(uuidSchema),
   type: Type.Enum(NotificationType),
-  content: Type.String({ minLength: 1, maxLength: 500 }),
 });
 export type CreateNotificationInput = Static<typeof createNotificationSchema>;

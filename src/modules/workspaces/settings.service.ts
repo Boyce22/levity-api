@@ -1,17 +1,17 @@
 import type { Logger } from 'pino';
 import {
-  Role,
-  type CreateTagInput,
+  WorkspaceRole,
   type CreatePriorityInput,
-  type WorkspaceTagResponse,
+  type CreateTagInput,
   type WorkspacePriorityResponse,
+  type WorkspaceTagResponse,
 } from '../../contracts/index';
 import type {
-  WorkspaceTag,
-  WorkspacePriority,
-  WorkspaceTagRepository,
-  WorkspacePriorityRepository,
   WorkspaceMemberRepository,
+  WorkspacePriority,
+  WorkspacePriorityRepository,
+  WorkspaceTag,
+  WorkspaceTagRepository,
 } from '../../db/index';
 
 export class SettingsService {
@@ -29,14 +29,14 @@ export class SettingsService {
   }
 
   async createTag(userId: string, workspaceId: string, input: CreateTagInput): Promise<WorkspaceTagResponse> {
-    await this.memberRepository.assertRole(userId, workspaceId, Role.OWNER, Role.ADMIN);
+    await this.memberRepository.assertRole(userId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
     const tag = await this.tagRepository.create(workspaceId, input.name, input.color);
     this.logger.info({ workspaceId, tagId: tag.id }, 'Tag created');
     return toTagResponse(tag);
   }
 
   async deleteTag(userId: string, workspaceId: string, tagId: string): Promise<void> {
-    await this.memberRepository.assertRole(userId, workspaceId, Role.OWNER, Role.ADMIN);
+    await this.memberRepository.assertRole(userId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
     await this.tagRepository.delete(tagId);
   }
 
@@ -51,13 +51,13 @@ export class SettingsService {
     workspaceId: string,
     input: CreatePriorityInput,
   ): Promise<WorkspacePriorityResponse> {
-    await this.memberRepository.assertRole(userId, workspaceId, Role.OWNER, Role.ADMIN);
+    await this.memberRepository.assertRole(userId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
     const priority = await this.priorityRepository.create(workspaceId, input);
     return toPriorityResponse(priority);
   }
 
   async deletePriority(userId: string, workspaceId: string, priorityId: string): Promise<void> {
-    await this.memberRepository.assertRole(userId, workspaceId, Role.OWNER, Role.ADMIN);
+    await this.memberRepository.assertRole(userId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
     await this.priorityRepository.delete(priorityId);
   }
 }
@@ -69,6 +69,7 @@ function toTagResponse(t: WorkspaceTag): WorkspaceTagResponse {
     name: t.name,
     color: t.color,
     created_at: t.created_at.toISOString(),
+    status: t.status,
   };
 }
 
@@ -81,5 +82,8 @@ function toPriorityResponse(p: WorkspacePriority): WorkspacePriorityResponse {
     icon: p.icon,
     position: p.position,
     created_at: p.created_at.toISOString(),
+    code: p.code,
+    is_system: p.is_system,
+    status: p.status,
   };
 }

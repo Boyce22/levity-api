@@ -32,9 +32,9 @@ test('boolean query accepts only true and false strings', () => {
 });
 
 test('UUID, nested arrays and array limits are validated', () => {
-  const result = validateDto(saveDiagramSchema, { card_id: id, data: { elements: [] } });
-  assert.equal(result.card_id, id);
-  assert.throws(() => validateDto(saveDiagramSchema, { card_id: 'invalid', data: { elements: [] } }));
+  const result = validateDto(saveDiagramSchema, { issue_id: id, data: { elements: [] } });
+  assert.equal(result.issue_id, id);
+  assert.throws(() => validateDto(saveDiagramSchema, { issue_id: 'invalid', data: { elements: [] } }));
 });
 
 test('environment parsing applies defaults and CORS transformation', async () => {

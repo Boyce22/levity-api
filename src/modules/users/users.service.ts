@@ -40,10 +40,11 @@ function toUserResponse(user: User): UserResponse {
   return {
     id: user.id,
     username: user.username,
-    display_name: user.display_name,
-    avatar_url: user.avatar_url,
-    bio: user.bio,
-    email: user.email,
+    first_name: user.first_name ?? undefined,
+    last_name: user.last_name ?? undefined,
+    avatar_url: user.avatar_url ?? undefined,
+    bio: user.bio ?? undefined,
+    email: user.email ?? undefined,
     created_at: user.created_at.toISOString(),
   };
 }
@@ -52,7 +53,8 @@ function toUserPublicResponse(user: User): UserPublicResponse {
   return {
     id: user.id,
     username: user.username,
-    display_name: user.display_name,
-    avatar_url: user.avatar_url,
+    first_name: user.first_name ?? undefined,
+    last_name: user.last_name ?? undefined,
+    avatar_url: user.avatar_url ?? undefined,
   };
 }

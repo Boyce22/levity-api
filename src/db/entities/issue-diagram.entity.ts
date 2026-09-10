@@ -1,13 +1,13 @@
 import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
 
-@Entity('diagrams')
-export class Diagram {
+@Entity('issue_diagrams')
+export class IssueDiagram {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
   @Column({ type: 'uuid', unique: true })
-  card_id!: string;
+  issue_id!: string;
 
   @Column({ type: 'jsonb' })
   data!: object;

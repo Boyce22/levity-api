@@ -1,7 +1,8 @@
-import { Entity, Column, ManyToOne, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { Role } from '../../contracts/index';
+import { WorkspaceRole } from '../../contracts/index';
 import { Workspace } from './workspace.entity';
+import { InviteBoardGrant } from './invite-board-grant.entity';
 
 @Entity('workspace_invites')
 export class WorkspaceInvite {
@@ -24,13 +25,18 @@ export class WorkspaceInvite {
   current_uses!: number;
 
   @Column({ type: 'timestamptz', nullable: true })
-  expires_at?: Date;
+  expires_at?: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  revoked_at?: Date;
+  revoked_at?: Date | null;
 
-  @Column({ type: 'enum', enum: Role, default: Role.MEMBER })
-  role!: Role;
+  @Column({
+    type: 'enum',
+    enum: WorkspaceRole,
+    enumName: 'workspace_role_enum',
+    default: WorkspaceRole.MEMBER,
+  })
+  workspace_role!: WorkspaceRole;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date;
@@ -38,4 +44,7 @@ export class WorkspaceInvite {
   @ManyToOne(() => Workspace, (w) => w.invites, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'workspace_id' })
   workspace!: Workspace;
+
+  @OneToMany(() => InviteBoardGrant, (g) => g.invite)
+  grants!: InviteBoardGrant[];
 }

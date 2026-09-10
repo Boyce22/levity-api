@@ -2,22 +2,22 @@ import { IsNull, type Repository } from 'typeorm';
 import type { CreateSprintInput, UpdateSprintInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Sprint } from '../entities/sprint.entity';
-import { type SprintCard } from '../entities/sprint-card.entity';
+import { type SprintIssue } from '../entities/sprint-issue.entity';
 
 export interface CreateSprintData extends CreateSprintInput {
-  workspace_id: string;
+  board_id: string;
   created_by: string;
 }
 
 export class SprintRepository {
   constructor(
     private readonly sprintRepo: Repository<Sprint>,
-    private readonly sprintCardRepo: Repository<SprintCard>,
+    private readonly sprintIssueRepo: Repository<SprintIssue>,
   ) {}
 
-  async findByWorkspace(workspaceId: string): Promise<Sprint[]> {
+  async findByBoard(boardId: string): Promise<Sprint[]> {
     return this.sprintRepo.find({
-      where: { workspace_id: workspaceId },
+      where: { board_id: boardId },
       order: { created_at: 'DESC' },
     });
   }
@@ -32,8 +32,8 @@ export class SprintRepository {
     return sprint;
   }
 
-  async findActiveByWorkspace(workspaceId: string): Promise<Sprint | null> {
-    return this.sprintRepo.findOne({ where: { workspace_id: workspaceId, status: 'active' } });
+  async findActiveByBoard(boardId: string): Promise<Sprint | null> {
+    return this.sprintRepo.findOne({ where: { board_id: boardId, status: 'active' } });
   }
 
   async create(data: CreateSprintData): Promise<Sprint> {
@@ -52,61 +52,61 @@ export class SprintRepository {
     if (!affected) throw new NotFoundError('Sprint not found');
   }
 
-  async addCard(sprintId: string, cardId: string, position: number): Promise<SprintCard> {
-    const sc = this.sprintCardRepo.create({ sprint_id: sprintId, card_id: cardId, position });
-    return this.sprintCardRepo.save(sc);
+  async addIssue(sprintId: string, issueId: string, position: number): Promise<SprintIssue> {
+    const si = this.sprintIssueRepo.create({ sprint_id: sprintId, issue_id: issueId, position });
+    return this.sprintIssueRepo.save(si);
   }
 
-  async removeCard(sprintId: string, cardId: string): Promise<void> {
-    await this.sprintCardRepo.update(
-      { sprint_id: sprintId, card_id: cardId, removed_at: IsNull() },
+  async removeIssue(sprintId: string, issueId: string): Promise<void> {
+    await this.sprintIssueRepo.update(
+      { sprint_id: sprintId, issue_id: issueId, removed_at: IsNull() },
       { removed_at: new Date() },
     );
   }
 
-  async carryOverCard(fromSprintId: string, toSprintId: string, cardId: string): Promise<SprintCard> {
-    const existing = await this.sprintCardRepo.findOne({
-      where: { sprint_id: fromSprintId, card_id: cardId, removed_at: IsNull() },
+  async carryOverIssue(fromSprintId: string, toSprintId: string, issueId: string): Promise<SprintIssue> {
+    const existing = await this.sprintIssueRepo.findOne({
+      where: { sprint_id: fromSprintId, issue_id: issueId, removed_at: IsNull() },
     });
 
     if (existing) {
       existing.removed_at = new Date();
       existing.moved_to_sprint_id = toSprintId;
-      await this.sprintCardRepo.save(existing);
+      await this.sprintIssueRepo.save(existing);
     }
 
-    const newSc = this.sprintCardRepo.create({ sprint_id: toSprintId, card_id: cardId, position: 0 });
-    return this.sprintCardRepo.save(newSc);
+    const next = this.sprintIssueRepo.create({ sprint_id: toSprintId, issue_id: issueId, position: 0 });
+    return this.sprintIssueRepo.save(next);
   }
 
-  async reorderCards(sprintId: string, updates: { id: string; position: number }[]): Promise<void> {
+  async reorderIssues(sprintId: string, updates: { id: string; position: number }[]): Promise<void> {
     if (updates.length === 0) return;
 
     const ids = updates.map((u) => u.id);
     const positions = updates.map((u) => u.position);
 
-    await this.sprintCardRepo.query(
-      `UPDATE sprint_cards SET position = data.pos
+    await this.sprintIssueRepo.query(
+      `UPDATE sprint_issues SET position = data.pos
        FROM (SELECT unnest($1::uuid[]) AS id, unnest($2::int[]) AS pos) AS data
-       WHERE sprint_cards.id = data.id AND sprint_cards.sprint_id = $3`,
+       WHERE sprint_issues.id = data.id AND sprint_issues.sprint_id = $3`,
       [ids, positions, sprintId],
     );
   }
 
-  async findSprintCards(sprintId: string): Promise<SprintCard[]> {
-    return this.sprintCardRepo.find({
+  async findSprintIssues(sprintId: string): Promise<SprintIssue[]> {
+    return this.sprintIssueRepo.find({
       where: { sprint_id: sprintId, removed_at: IsNull() },
-      relations: ['card'],
+      relations: ['issue'],
       order: { position: 'ASC' },
     });
   }
 
-  async findCardInActiveSprint(cardId: string): Promise<SprintCard | null> {
-    return this.sprintCardRepo
-      .createQueryBuilder('sc')
-      .innerJoin('sc.sprint', 's')
-      .where('sc.card_id = :cardId', { cardId })
-      .andWhere('sc.removed_at IS NULL')
+  async findIssueInActiveSprint(issueId: string): Promise<SprintIssue | null> {
+    return this.sprintIssueRepo
+      .createQueryBuilder('si')
+      .innerJoin('si.sprint', 's')
+      .where('si.issue_id = :issueId', { issueId })
+      .andWhere('si.removed_at IS NULL')
       .andWhere('s.status = :status', { status: 'active' })
       .getOne();
   }

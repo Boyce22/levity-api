@@ -2,7 +2,8 @@ import { Type, type Static } from '@sinclair/typebox';
 import { emailSchema, uuidSchema } from '../shared/typebox';
 
 export const updateUserSchema = Type.Object({
-  display_name: Type.Optional(Type.String({ minLength: 1, maxLength: 50 })),
+  first_name: Type.Optional(Type.String({ maxLength: 50 })),
+  last_name: Type.Optional(Type.String({ maxLength: 50 })),
   avatar_url: Type.Optional(Type.String()),
   bio: Type.Optional(Type.String({ maxLength: 500 })),
   email: Type.Optional(emailSchema),

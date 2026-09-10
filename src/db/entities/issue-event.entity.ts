@@ -1,14 +1,14 @@
 import { Entity, Column, ManyToOne, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
-import { Card } from './card.entity';
+import { Issue } from './issue.entity';
 
-@Entity('card_history')
-export class CardHistory {
+@Entity('issue_events')
+export class IssueEvent {
   @PrimaryColumn('uuid')
   id: string = generateUUID();
 
   @Column({ type: 'uuid' })
-  card_id!: string;
+  issue_id!: string;
 
   @Column({ type: 'uuid' })
   created_by!: string;
@@ -20,15 +20,15 @@ export class CardHistory {
   field!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  old_val?: string;
+  old_val?: string | null;
 
   @Column({ type: 'varchar', nullable: true })
-  new_val?: string;
+  new_val?: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date;
 
-  @ManyToOne(() => Card, (card) => card.history, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'card_id' })
-  card!: Card;
+  @ManyToOne(() => Issue, (issue) => issue.events, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'issue_id' })
+  issue!: Issue;
 }

@@ -1,28 +1,39 @@
 import type { Repository } from 'typeorm';
-import type { CreateCommentInput, QueryCommentsInput } from '../../contracts/index';
 import { NotFoundError, ForbiddenError } from '../../shared/index';
-import { type Comment } from '../entities/comment.entity';
+import { type IssueComment } from '../entities/issue-comment.entity';
 
-export class CommentRepository {
-  constructor(private readonly repository: Repository<Comment>) {}
+export type CreateIssueCommentData = {
+  issue_id: string;
+  content: string;
+  parent_id?: string | null;
+};
 
-  async findById(id: string): Promise<Comment | null> {
+export type QueryIssueCommentsInput = {
+  issue_id: string;
+  limit: number;
+  cursor?: string;
+};
+
+export class IssueCommentRepository {
+  constructor(private readonly repository: Repository<IssueComment>) {}
+
+  async findById(id: string): Promise<IssueComment | null> {
     return this.repository.findOne({ where: { id } });
   }
 
-  async findByParent(parentId: string): Promise<Comment[]> {
+  async findByParent(parentId: string): Promise<IssueComment[]> {
     return this.repository.find({
       where: { parent_id: parentId },
       order: { created_at: 'ASC' },
     });
   }
 
-  async findByCard(query: QueryCommentsInput): Promise<{ data: Comment[]; nextCursor?: string }> {
-    const { card_id, limit, cursor } = query;
+  async findByIssue(query: QueryIssueCommentsInput): Promise<{ data: IssueComment[]; nextCursor?: string }> {
+    const { issue_id, limit, cursor } = query;
 
     const qb = this.repository
       .createQueryBuilder('comment')
-      .where('comment.card_id = :card_id', { card_id })
+      .where('comment.issue_id = :issue_id', { issue_id })
       .orderBy('comment.created_at', 'DESC')
       .take(limit + 1);
 
@@ -38,12 +49,12 @@ export class CommentRepository {
     return { data, nextCursor };
   }
 
-  async create(userId: string, input: CreateCommentInput): Promise<Comment> {
+  async create(userId: string, input: CreateIssueCommentData): Promise<IssueComment> {
     const comment = this.repository.create({ ...input, created_by: userId });
     return this.repository.save(comment);
   }
 
-  async update(id: string, userId: string, content: string): Promise<Comment> {
+  async update(id: string, userId: string, content: string): Promise<IssueComment> {
     const comment = await this.findByIdOrFail(id);
     if (comment.created_by !== userId) throw new ForbiddenError("Cannot edit another user's comment");
     comment.content = content;
@@ -58,7 +69,7 @@ export class CommentRepository {
     await this.repository.delete(id);
   }
 
-  private async findByIdOrFail(id: string): Promise<Comment> {
+  private async findByIdOrFail(id: string): Promise<IssueComment> {
     const comment = await this.findById(id);
     if (!comment) throw new NotFoundError('Comment not found');
     return comment;

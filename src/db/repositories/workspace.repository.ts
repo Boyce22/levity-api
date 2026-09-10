@@ -1,4 +1,5 @@
 import type { Repository } from 'typeorm';
+import { MembershipStatus } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Workspace } from '../entities/workspace.entity';
 import { type WorkspaceMember } from '../entities/workspace-member.entity';
@@ -29,11 +30,11 @@ export class WorkspaceRepository {
     const qb = this.repository
       .createQueryBuilder('w')
       .leftJoin('workspace_members', 'm', 'm.workspace_id = w.id')
-      .addSelect(['m.id', 'm.user_id', 'm.role', 'm.joined_at'])
-      .leftJoin('workspace_tags', 't', 't.workspace_id = w.id')
+      .addSelect(['m.id', 'm.user_id', 'm.role', 'm.membership_status', 'm.joined_at'])
+      .leftJoin('workspace_tags', 't', 't.workspace_id = w.id AND t.deleted_at IS NULL')
       .addSelect(['t.id', 't.name', 't.color', 't.created_at'])
-      .leftJoin('workspace_priorities', 'p', 'p.workspace_id = w.id')
-      .addSelect(['p.id', 'p.name', 'p.color', 'p.icon', 'p.position', 'p.created_at'])
+      .leftJoin('workspace_priorities', 'p', 'p.workspace_id = w.id AND p.deleted_at IS NULL')
+      .addSelect(['p.id', 'p.name', 'p.color', 'p.icon', 'p.position', 'p.code', 'p.is_system', 'p.status', 'p.created_at'])
       .where('w.id = :id', { id: workspaceId });
 
     const raw = await qb.getRawAndEntities();
@@ -56,6 +57,7 @@ export class WorkspaceRepository {
           workspace_id: row.w_id,
           user_id: row.m_user_id,
           role: row.m_role,
+          membership_status: row.m_membership_status,
           joined_at: row.m_joined_at,
         } as WorkspaceMember);
       }
@@ -78,6 +80,9 @@ export class WorkspaceRepository {
           color: row.p_color,
           icon: row.p_icon,
           position: row.p_position,
+          code: row.p_code,
+          is_system: row.p_is_system,
+          status: row.p_status,
           created_at: row.p_created_at,
         } as WorkspacePriority);
       }
@@ -91,6 +96,8 @@ export class WorkspaceRepository {
       .createQueryBuilder('workspace')
       .innerJoin('workspace_members', 'wm', 'wm.workspace_id = workspace.id')
       .where('wm.user_id = :userId', { userId })
+      .andWhere('wm.membership_status = :status', { status: MembershipStatus.ACTIVE })
+      .andWhere('workspace.deleted_at IS NULL')
       .orderBy('workspace.created_at', 'DESC')
       .getMany();
   }

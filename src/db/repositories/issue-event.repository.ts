@@ -1,9 +1,9 @@
 import type { Repository } from 'typeorm';
-import { type CardHistory } from '../entities/card-history.entity';
+import { type IssueEvent } from '../entities/issue-event.entity';
 
-export interface CardHistoryWithUser {
+export interface IssueEventWithUser {
   id: string;
-  card_id: string;
+  issue_id: string;
   created_by: string;
   action_type: string;
   field: string;
@@ -13,20 +13,21 @@ export interface CardHistoryWithUser {
   users?: {
     id: string;
     username: string;
-    display_name?: string;
+    first_name?: string;
+    last_name?: string;
     avatar_url?: string;
   };
 }
 
-export class CardHistoryRepository {
-  constructor(private readonly repository: Repository<CardHistory>) {}
+export class IssueEventRepository {
+  constructor(private readonly repository: Repository<IssueEvent>) {}
 
-  async findByCard(cardId: string): Promise<CardHistoryWithUser[]> {
+  async findByIssue(issueId: string): Promise<IssueEventWithUser[]> {
     const rows = await this.repository.manager
       .createQueryBuilder()
       .select([
         'h.id           AS id',
-        'h.card_id      AS card_id',
+        'h.issue_id     AS issue_id',
         'h.created_by   AS created_by',
         'h.action_type  AS action_type',
         'h.field        AS field',
@@ -35,18 +36,19 @@ export class CardHistoryRepository {
         'h.created_at   AS created_at',
         'u.id           AS user_id',
         'u.username     AS username',
-        'u.display_name AS display_name',
+        'u.first_name   AS first_name',
+        'u.last_name    AS last_name',
         'u.avatar_url   AS avatar_url',
       ])
-      .from('card_history', 'h')
+      .from('issue_events', 'h')
       .leftJoin('users', 'u', 'u.id = h.created_by')
-      .where('h.card_id = :cardId', { cardId })
+      .where('h.issue_id = :issueId', { issueId })
       .orderBy('h.created_at', 'DESC')
       .getRawMany();
 
     return rows.map((r) => ({
       id: r.id,
-      card_id: r.card_id,
+      issue_id: r.issue_id,
       created_by: r.created_by,
       action_type: r.action_type,
       field: r.field,
@@ -57,7 +59,8 @@ export class CardHistoryRepository {
         ? {
             id: r.user_id,
             username: r.username,
-            display_name: r.display_name ?? undefined,
+            first_name: r.first_name ?? undefined,
+            last_name: r.last_name ?? undefined,
             avatar_url: r.avatar_url ?? undefined,
           }
         : undefined,
@@ -65,13 +68,13 @@ export class CardHistoryRepository {
   }
 
   async record(data: {
-    card_id: string;
+    issue_id: string;
     created_by: string;
     action_type: string;
     field: string;
     old_val?: string;
     new_val?: string;
-  }): Promise<CardHistory> {
+  }): Promise<IssueEvent> {
     const entry = this.repository.create(data);
     return this.repository.save(entry);
   }

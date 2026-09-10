@@ -10,8 +10,8 @@ export function buildRoutes(container: ApiContainer) {
     await fastify.register(plugins.workspaces, { prefix: '/workspaces' });
     await fastify.register(plugins.members, { prefix: '/workspaces' });
     await fastify.register(plugins.settings, { prefix: '/workspaces' });
-    await fastify.register(plugins.board, { prefix: '/workspaces' });
-    await fastify.register(plugins.sprints, { prefix: '/workspaces' });
+    await fastify.register(plugins.board, { prefix: '/boards' });
+    await fastify.register(plugins.sprints, { prefix: '/boards' });
     await fastify.register(plugins.comments, { prefix: '/comments' });
     await fastify.register(plugins.notifications, { prefix: '/notifications' });
     await fastify.register(plugins.diagrams, { prefix: '/diagrams' });

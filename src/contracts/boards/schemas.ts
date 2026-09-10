@@ -1,50 +1,52 @@
 import { Type, type Static } from '@sinclair/typebox';
-import { ListType } from '../shared/list-type.enum';
-import { uuidSchema } from '../shared/typebox';
+import { BoardColumnType } from '../shared/board-column-type.enum';
+import { dateTimeSchema, uuidSchema } from '../shared/typebox';
 
-export const createListSchema = Type.Object({
+export const createColumnSchema = Type.Object({
   title: Type.String({ minLength: 1, maxLength: 100 }),
   position: Type.Number({ default: 0 }),
 });
-export type CreateListInput = Static<typeof createListSchema>;
+export type CreateColumnInput = Static<typeof createColumnSchema>;
 
-export const updateListSchema = Type.Object({
+export const updateColumnSchema = Type.Object({
   title: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
   position: Type.Optional(Type.Number()),
   wip_limit: Type.Optional(Type.Union([Type.Integer({ exclusiveMinimum: 0 }), Type.Null()])),
-  list_type: Type.Optional(Type.Union([Type.Enum(ListType), Type.Null()])),
+  column_type: Type.Optional(Type.Union([Type.Enum(BoardColumnType), Type.Null()])),
 });
-export type UpdateListInput = Static<typeof updateListSchema>;
+export type UpdateColumnInput = Static<typeof updateColumnSchema>;
 
-export const updateListPositionsSchema = Type.Array(
+export const updateColumnPositionsSchema = Type.Array(
   Type.Object({ id: uuidSchema, position: Type.Number() }),
 );
-export type UpdateListPositionsInput = Static<typeof updateListPositionsSchema>;
+export type UpdateColumnPositionsInput = Static<typeof updateColumnPositionsSchema>;
 
-export const createCardSchema = Type.Object({
+export const createIssueSchema = Type.Object({
   content: Type.String({ minLength: 1, maxLength: 500 }),
-  list_id: uuidSchema,
+  column_id: uuidSchema,
   position: Type.Number({ default: 0 }),
+  priority_id: Type.Optional(uuidSchema),
+  tag_id: Type.Optional(uuidSchema),
 });
-export type CreateCardInput = Static<typeof createCardSchema>;
+export type CreateIssueInput = Static<typeof createIssueSchema>;
 
-export const updateCardSchema = Type.Object({
+export const updateIssueSchema = Type.Object({
   content: Type.Optional(Type.String({ minLength: 1, maxLength: 500 })),
   description: Type.Optional(Type.Union([Type.String({ maxLength: 10000 }), Type.Null()])),
   cover_url: Type.Optional(Type.Union([Type.String({ maxLength: 2048 }), Type.Null()])),
   assignee_id: Type.Optional(Type.Union([uuidSchema, Type.Null()])),
-  priority: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  label: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+  priority_id: Type.Optional(uuidSchema),
+  tag_id: Type.Optional(Type.Union([uuidSchema, Type.Null()])),
   progress: Type.Optional(Type.Union([Type.Integer({ minimum: 0, maximum: 100 }), Type.Null()])),
-  due_date: Type.Optional(Type.Union([Type.String({ pattern: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.source }), Type.Null()])),
-  list_id: Type.Optional(uuidSchema),
+  due_date: Type.Optional(Type.Union([dateTimeSchema, Type.Null()])),
+  column_id: Type.Optional(uuidSchema),
   position: Type.Optional(Type.Number()),
   story_points: Type.Optional(Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])),
   estimated_hours: Type.Optional(Type.Union([Type.Number({ exclusiveMinimum: 0 }), Type.Null()])),
 });
-export type UpdateCardInput = Static<typeof updateCardSchema>;
+export type UpdateIssueInput = Static<typeof updateIssueSchema>;
 
-export const updateCardPositionsSchema = Type.Array(
-  Type.Object({ id: uuidSchema, position: Type.Number(), list_id: Type.Optional(uuidSchema) }),
+export const updateIssuePositionsSchema = Type.Array(
+  Type.Object({ id: uuidSchema, position: Type.Number(), column_id: Type.Optional(uuidSchema) }),
 );
-export type UpdateCardPositionsInput = Static<typeof updateCardPositionsSchema>;
+export type UpdateIssuePositionsInput = Static<typeof updateIssuePositionsSchema>;

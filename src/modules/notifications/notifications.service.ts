@@ -38,10 +38,9 @@ function toNotificationResponse(n: Notification): NotificationResponse {
   return {
     id: n.id,
     user_id: n.user_id,
-    actor_id: n.actor_id,
-    card_id: n.card_id,
+    actor_id: n.actor_id ?? undefined,
+    issue_id: n.issue_id ?? undefined,
     type: n.type,
-    content: n.content,
     read: n.read,
     created_at: n.created_at.toISOString(),
   };
