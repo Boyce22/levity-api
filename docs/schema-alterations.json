@@ -1,0 +1,551 @@
+{
+  "$schema_note": "Plain JSON spec for an implementing LLM. Not JSON Schema. Read llm_contract first. Greenfield: there is no production database and no data to migrate.",
+  "llm_contract": {
+    "role": "Implement only the changes listed in `changes` whose `status` is `approved` and whose `layer` is in `execution.allowed_layers`.",
+    "read_order": [
+      "llm_contract",
+      "execution",
+      "context",
+      "do_not",
+      "target_schema",
+      "waves",
+      "changes"
+    ],
+    "rules": [
+      "There is no production. Do not RENAME lists/cards. Do not backfill. Do not run orphan preflights.",
+      "Treat this file as the source of truth. Canvases are human views of the same plan.",
+      "Apply changes in `wave` order. Inside a wave, respect `depends_on`.",
+      "Wave 0 replaces the existing TypeORM migrations with one baseline that CREATE TABLE using the names in `target_schema`.",
+      "Do not invent extra tables, columns, enums, or product features beyond this file.",
+      "Do not rewrite services except items with layer=app that are approved.",
+      "Postgres + TypeORM. Partial unique indexes are the uniqueness mechanism for live/active rows.",
+      "Do not use CONCURRENTLY inside a transactional TypeORM migration.",
+      "After implementing, set that change status to implemented only if the user asked to update this file."
+    ]
+  },
+  "execution": {
+    "status": "specified_not_applied",
+    "allowed_layers": ["db"],
+    "deferred_layers": ["app", "product_decision"],
+    "environment": "greenfield",
+    "target": {
+      "repo": "levity-api",
+      "orm": "typeorm",
+      "database": "postgresql",
+      "migrations_dir": "src/db/migrations",
+      "strategy": "Replace InitialSchema + AddScalabilityIndexes + AddSprints with a single baseline migration. Drop the old migration files. Empty database assumed; `typeorm migration:run` on a fresh DB is the only path.",
+      "suggested_migration_class": "GreenfieldBaseline1767800000000",
+      "replace_migrations": [
+        "1724700000000-InitialSchema.ts",
+        "1760580000000-AddScalabilityIndexes.ts",
+        "1760580000001-AddSprints.ts"
+      ]
+    }
+  },
+  "context": {
+    "product": "Levity — workspace (tenant) with N boards; kanban + optional sprint overlay per board",
+    "why": "Baseline schema in final names. Workspace is not a board. No production dump to patch.",
+    "identity_glossary": {
+      "username": "Stable login handle. Unique among live users. register/login, JWT, @mentions. Not in profile PATCH.",
+      "first_name": "Given name. Optional. Editable on profile.",
+      "last_name": "Family name. Optional.",
+      "display_label": "Not a column. Compose concat_ws(' ', first_name, last_name) or username.",
+      "email": "Optional unique contact among live users. Not the login key.",
+      "account_status": "ENUM users_account_status_enum: active | suspended. Login only if active AND deleted_at IS NULL.",
+      "deleted_at": "Tombstone. Live uniques ignore these rows.",
+      "updated_at": "Last profile/row mutation. Not login.",
+      "last_login_at": "Last successful token issue (login and register)."
+    },
+    "workspace_glossary": {
+      "workspaces.status": "ENUM workspace_status_enum: active | archived. Default active.",
+      "workspaces.deleted_at": "Tombstone. Do not use status=deleted.",
+      "workspace_members.role": "ENUM workspace_role_enum: owner | admin | member. Tenant ACL only. Not board editor/viewer.",
+      "workspace_members.membership_status": "ENUM membership_status_enum: active | left | removed.",
+      "workspace_members.left_at": "When membership stopped being active.",
+      "workspace_members.last_accessed_at": "Last open of the workspace home."
+    },
+    "board_glossary": {
+      "boards": "Kanban container. N per workspace. Create workspace inserts the first board.",
+      "board_members.role": "ENUM board_role_enum: admin | editor | viewer. Source of truth for seeing/editing that board.",
+      "board_columns.board_id": "Never workspace_id.",
+      "sprints.board_id": "One active sprint per board (partial unique).",
+      "home_list": "Boards the user has board_members for. Workspace owner/admin may self-grant. Creating a board auto-inserts board_members admin for the creator.",
+      "invite": "workspace_invites + invite_board_grants. Grants required (≥1 board). Accept upserts workspace_members then board_members. Snapshot of current boards if UI checks “all current”; no inherit-future-boards."
+    },
+    "catalog_glossary": {
+      "priority_system": "Four system rows per workspace: code low|medium|high|critical, name LOW|MEDIUM|HIGH|CRITICAL, is_system=true. Custom extras allowed. New issues default MEDIUM (app). System rows cannot be deleted.",
+      "tag": "workspace_tags + issues.tag_id uuid NULL. Option A locked. UI may say Label. No issue_tags M2M. No workspace_labels.",
+      "status": "catalog_status_enum: active | archived on tags and priorities."
+    },
+    "naming_locked": {
+      "issues.content": "Title of the issue. Do not rename to title in this spec.",
+      "board_columns.title": "Column header. Keep.",
+      "workspace_tags": "Keep. issues.tag_id. Rejected: workspace_labels, label_id, issue_tags."
+    }
+  },
+  "do_not": [
+    "Do not mention or create tables named lists, cards, card_history, sprint_cards, comments, diagrams.",
+    "Do not RENAME; there is nothing to rename. CREATE the target names.",
+    "Do not keep users.display_name. Columns are first_name + last_name.",
+    "Do not name workspace_members.role with editor|viewer — those are board_role_enum.",
+    "Do not put board ACL only on invite JSON. Persist invite_board_grants and board_members.",
+    "Do not use sprints.workspace_id. Sprint is per board.",
+    "Do not use board_columns.workspace_id. Column is per board.",
+    "Do not store issues.priority or issues.label as varchar.",
+    "Do not rename workspace_tags. Do not add issue_tags or label_id.",
+    "Do not omit the four system priorities. Do not default issue priority_id to NULL.",
+    "Do not inherit future boards on invite. Do not accept an invite with zero board grants.",
+    "Do not add workspace_id denormalized on issues (reach workspace via column → board).",
+    "Do not enable WRITE_ROLES / wip_limit enforcement here (layer=app deferred).",
+    "Do not drop column_type or progress; they diverge until product.done_definition.",
+    "Do not add issues.deleted_at until product.soft_delete_issues is approved. Hard DELETE is fine.",
+    "Do not modify files storage / cover_url semantics.",
+    "Do not use CONCURRENTLY in a TypeORM transaction migration.",
+    "Do not add users.status. Use account_status + deleted_at.",
+    "Do not add workspaces.status=deleted. Tombstone is deleted_at.",
+    "Do not table-UNIQUE (workspace_id, name) on tags/priorities — use live partial unique (active + deleted_at IS NULL).",
+    "Do not table-UNIQUE workspace_members (workspace_id, user_id) for all rows — unique only among membership_status=active.",
+    "Do not duplicate UNIQUE with a second btree on the same columns (no IDX_workspace_members_workspace_user)."
+  ],
+  "target_schema": {
+    "enums": {
+      "users_account_status_enum": ["active", "suspended"],
+      "workspace_status_enum": ["active", "archived"],
+      "workspace_role_enum": ["owner", "admin", "member"],
+      "membership_status_enum": ["active", "left", "removed"],
+      "board_role_enum": ["admin", "editor", "viewer"],
+      "board_column_type_enum": ["todo", "in_progress", "review", "done"],
+      "catalog_status_enum": ["active", "archived"],
+      "notifications_type_enum": ["mention", "assignment", "reply", "comment"],
+      "sprint_status_enum": ["planning", "active", "completed"],
+      "sprint_tracking_mode_enum": ["points", "count", "hours"]
+    },
+    "tables": [
+      "users",
+      "workspaces",
+      "workspace_members",
+      "workspace_invites",
+      "invite_board_grants",
+      "workspace_tags",
+      "workspace_priorities",
+      "boards",
+      "board_members",
+      "board_columns",
+      "issues",
+      "issue_events",
+      "issue_comments",
+      "issue_diagrams",
+      "notifications",
+      "sprints",
+      "sprint_issues"
+    ],
+    "create_workspace_transaction": [
+      "INSERT workspaces + workspace_members (role=owner, membership_status=active)",
+      "Seed four system workspace_priorities",
+      "INSERT boards (first board)",
+      "INSERT four board_columns (todo, in_progress, review, done) — app wave; baseline may omit seed SQL",
+      "INSERT board_members (creator, role=admin)"
+    ]
+  },
+  "waves": [
+    {
+      "id": 0,
+      "name": "greenfield_baseline",
+      "goal": "One migration: all tables, FKs, partial uniques, query indexes. Final names only."
+    }
+  ],
+  "changes": [
+    {
+      "id": "schema.greenfield_baseline",
+      "wave": 0,
+      "layer": "db",
+      "kind": "replace_migrations_with_baseline",
+      "status": "approved",
+      "tables": ["*"],
+      "depends_on": [],
+      "intent": "Empty-DB baseline. Names, FKs, and indexes below. Seed of priorities/columns/board_members is app (create workspace), not this migration — except CHECK/enums that the seed will use.",
+      "ddl": {
+        "users": {
+          "columns": [
+            "id uuid PK",
+            "username varchar NOT NULL",
+            "password varchar NOT NULL",
+            "email varchar NULL",
+            "first_name varchar NULL",
+            "last_name varchar NULL",
+            "avatar_url varchar NULL",
+            "bio text NULL",
+            "account_status users_account_status_enum NOT NULL DEFAULT 'active'",
+            "deleted_at timestamptz NULL",
+            "updated_at timestamptz NOT NULL DEFAULT now()",
+            "last_login_at timestamptz NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "indexes": [
+            "UQ_users_username_live UNIQUE (username) WHERE deleted_at IS NULL",
+            "UQ_users_email_live UNIQUE (email) WHERE deleted_at IS NULL AND email IS NOT NULL",
+            "IDX_users_live_account_status (account_status) WHERE deleted_at IS NULL"
+          ]
+        },
+        "workspaces": {
+          "columns": [
+            "id uuid PK",
+            "name varchar NOT NULL",
+            "status workspace_status_enum NOT NULL DEFAULT 'active'",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "updated_at timestamptz NOT NULL DEFAULT now()",
+            "deleted_at timestamptz NULL"
+          ],
+          "fks": ["created_by → users(id) ON DELETE RESTRICT optional; if omitted, leave without FK to match current code — prefer FK ON DELETE RESTRICT"],
+          "indexes": ["IDX_workspaces_live (id) WHERE deleted_at IS NULL — skip if redundant with PK"]
+        },
+        "workspace_members": {
+          "columns": [
+            "id uuid PK",
+            "workspace_id uuid NOT NULL",
+            "user_id uuid NOT NULL",
+            "role workspace_role_enum NOT NULL DEFAULT 'member'",
+            "membership_status membership_status_enum NOT NULL DEFAULT 'active'",
+            "joined_at timestamptz NOT NULL DEFAULT now()",
+            "left_at timestamptz NULL",
+            "last_accessed_at timestamptz NULL"
+          ],
+          "fks": [
+            "workspace_id → workspaces(id) ON DELETE CASCADE",
+            "user_id → users(id) ON DELETE CASCADE"
+          ],
+          "indexes": [
+            "UQ_workspace_members_live UNIQUE (workspace_id, user_id) WHERE membership_status = 'active'",
+            "IDX_workspace_members_user_id (user_id)"
+          ]
+        },
+        "workspace_invites": {
+          "columns": [
+            "id uuid PK",
+            "workspace_id uuid NOT NULL",
+            "token uuid NOT NULL DEFAULT gen_random_uuid()",
+            "created_by uuid NOT NULL",
+            "max_uses int NOT NULL DEFAULT 1",
+            "current_uses int NOT NULL DEFAULT 0",
+            "expires_at timestamptz NULL",
+            "revoked_at timestamptz NULL",
+            "workspace_role workspace_role_enum NOT NULL DEFAULT 'member'",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": ["workspace_id → workspaces(id) ON DELETE CASCADE"],
+          "indexes": [
+            "UQ_workspace_invites_token UNIQUE (token)",
+            "IDX_workspace_invites_workspace_id (workspace_id)"
+          ],
+          "note": "Column is workspace_role not role. No editor/viewer here."
+        },
+        "invite_board_grants": {
+          "columns": [
+            "id uuid PK",
+            "invite_id uuid NOT NULL",
+            "board_id uuid NOT NULL",
+            "board_role board_role_enum NOT NULL"
+          ],
+          "fks": [
+            "invite_id → workspace_invites(id) ON DELETE CASCADE",
+            "board_id → boards(id) ON DELETE CASCADE"
+          ],
+          "indexes": ["UQ_invite_board_grants UNIQUE (invite_id, board_id)"]
+        },
+        "workspace_tags": {
+          "columns": [
+            "id uuid PK",
+            "workspace_id uuid NOT NULL",
+            "name varchar NOT NULL",
+            "color varchar NOT NULL",
+            "status catalog_status_enum NOT NULL DEFAULT 'active'",
+            "created_by uuid NULL",
+            "updated_by uuid NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "updated_at timestamptz NOT NULL DEFAULT now()",
+            "deleted_at timestamptz NULL"
+          ],
+          "fks": [
+            "workspace_id → workspaces(id) ON DELETE CASCADE",
+            "created_by → users(id) ON DELETE SET NULL",
+            "updated_by → users(id) ON DELETE SET NULL"
+          ],
+          "indexes": [
+            "UQ_workspace_tags_live_name UNIQUE (workspace_id, name) WHERE deleted_at IS NULL AND status = 'active'",
+            "IDX_workspace_tags_workspace_live (workspace_id) WHERE deleted_at IS NULL"
+          ]
+        },
+        "workspace_priorities": {
+          "columns": [
+            "id uuid PK",
+            "workspace_id uuid NOT NULL",
+            "name varchar NOT NULL",
+            "color varchar NOT NULL",
+            "icon varchar NOT NULL",
+            "position int NOT NULL DEFAULT 0",
+            "code varchar NULL",
+            "is_system boolean NOT NULL DEFAULT false",
+            "status catalog_status_enum NOT NULL DEFAULT 'active'",
+            "created_by uuid NULL",
+            "updated_by uuid NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "updated_at timestamptz NOT NULL DEFAULT now()",
+            "deleted_at timestamptz NULL"
+          ],
+          "checks": [
+            "CHK_workspace_priorities_code: code IS NULL OR code IN ('low','medium','high','critical')",
+            "CHK_workspace_priorities_system: NOT is_system OR code IS NOT NULL"
+          ],
+          "fks": [
+            "workspace_id → workspaces(id) ON DELETE CASCADE",
+            "created_by → users(id) ON DELETE SET NULL",
+            "updated_by → users(id) ON DELETE SET NULL"
+          ],
+          "indexes": [
+            "UQ_workspace_priorities_live_name UNIQUE (workspace_id, name) WHERE deleted_at IS NULL AND status = 'active'",
+            "UQ_workspace_priorities_live_code UNIQUE (workspace_id, code) WHERE deleted_at IS NULL AND code IS NOT NULL",
+            "IDX_workspace_priorities_workspace_live (workspace_id) WHERE deleted_at IS NULL"
+          ]
+        },
+        "boards": {
+          "columns": [
+            "id uuid PK",
+            "workspace_id uuid NOT NULL",
+            "name varchar NOT NULL",
+            "position float8 NOT NULL DEFAULT 0",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "updated_at timestamptz NOT NULL DEFAULT now()",
+            "deleted_at timestamptz NULL"
+          ],
+          "fks": ["workspace_id → workspaces(id) ON DELETE CASCADE"],
+          "indexes": [
+            "IDX_boards_workspace_position (workspace_id, position) WHERE deleted_at IS NULL"
+          ]
+        },
+        "board_members": {
+          "columns": [
+            "id uuid PK",
+            "board_id uuid NOT NULL",
+            "user_id uuid NOT NULL",
+            "role board_role_enum NOT NULL DEFAULT 'editor'",
+            "membership_status membership_status_enum NOT NULL DEFAULT 'active'",
+            "joined_at timestamptz NOT NULL DEFAULT now()",
+            "left_at timestamptz NULL",
+            "last_accessed_at timestamptz NULL"
+          ],
+          "fks": [
+            "board_id → boards(id) ON DELETE CASCADE",
+            "user_id → users(id) ON DELETE CASCADE"
+          ],
+          "indexes": [
+            "UQ_board_members_live UNIQUE (board_id, user_id) WHERE membership_status = 'active'",
+            "IDX_board_members_user_id (user_id)"
+          ]
+        },
+        "board_columns": {
+          "columns": [
+            "id uuid PK",
+            "board_id uuid NOT NULL",
+            "title varchar NOT NULL",
+            "position float8 NOT NULL DEFAULT 0",
+            "wip_limit int NULL",
+            "column_type board_column_type_enum NULL",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": ["board_id → boards(id) ON DELETE CASCADE"],
+          "indexes": ["IDX_board_columns_board_position (board_id, position)"]
+        },
+        "issues": {
+          "columns": [
+            "id uuid PK",
+            "content varchar NOT NULL",
+            "position float8 NOT NULL DEFAULT 0",
+            "description text NULL",
+            "cover_url varchar NULL",
+            "assignee_id uuid NULL",
+            "priority_id uuid NOT NULL",
+            "tag_id uuid NULL",
+            "progress int NULL",
+            "due_date timestamptz NULL",
+            "column_id uuid NOT NULL",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "story_points int NULL",
+            "estimated_hours float8 NULL"
+          ],
+          "fks": [
+            "column_id → board_columns(id) ON DELETE CASCADE",
+            "priority_id → workspace_priorities(id) ON DELETE RESTRICT",
+            "tag_id → workspace_tags(id) ON DELETE SET NULL",
+            "assignee_id → users(id) ON DELETE SET NULL"
+          ],
+          "indexes": [
+            "IDX_issues_column_position (column_id, position)",
+            "IDX_issues_priority_id (priority_id)",
+            "IDX_issues_tag_id (tag_id) WHERE tag_id IS NOT NULL",
+            "IDX_issues_assignee (assignee_id) WHERE assignee_id IS NOT NULL"
+          ],
+          "note": "App must ensure priority/tag belong to the same workspace as the board. No issues.deleted_at."
+        },
+        "issue_events": {
+          "columns": [
+            "id uuid PK",
+            "issue_id uuid NOT NULL",
+            "created_by uuid NOT NULL",
+            "action_type varchar NOT NULL",
+            "field varchar NOT NULL",
+            "old_val varchar NULL",
+            "new_val varchar NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": ["issue_id → issues(id) ON DELETE CASCADE"],
+          "indexes": ["IDX_issue_events_issue_created_at (issue_id, created_at DESC)"]
+        },
+        "issue_comments": {
+          "columns": [
+            "id uuid PK",
+            "issue_id uuid NOT NULL",
+            "parent_id uuid NULL",
+            "content text NOT NULL",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": [
+            "issue_id → issues(id) ON DELETE CASCADE",
+            "parent_id → issue_comments(id) ON DELETE CASCADE"
+          ],
+          "indexes": [
+            "IDX_issue_comments_issue_created_at (issue_id, created_at DESC)",
+            "IDX_issue_comments_parent_id (parent_id)"
+          ]
+        },
+        "issue_diagrams": {
+          "columns": [
+            "id uuid PK",
+            "issue_id uuid NOT NULL",
+            "data jsonb NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()",
+            "updated_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": ["issue_id → issues(id) ON DELETE CASCADE"],
+          "indexes": ["UQ_issue_diagrams_issue_id UNIQUE (issue_id)"]
+        },
+        "notifications": {
+          "columns": [
+            "id uuid PK",
+            "user_id uuid NOT NULL",
+            "actor_id uuid NULL",
+            "issue_id uuid NULL",
+            "type notifications_type_enum NOT NULL",
+            "read boolean NOT NULL DEFAULT false",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": [
+            "user_id → users(id) ON DELETE CASCADE",
+            "actor_id → users(id) ON DELETE CASCADE",
+            "issue_id → issues(id) ON DELETE CASCADE"
+          ],
+          "indexes": [
+            "IDX_notifications_user_created_at (user_id, created_at DESC)",
+            "IDX_notifications_user_read_created_at (user_id, read, created_at DESC)"
+          ]
+        },
+        "sprints": {
+          "columns": [
+            "id uuid PK",
+            "board_id uuid NOT NULL",
+            "name varchar NOT NULL",
+            "goal varchar NULL",
+            "start_date date NOT NULL",
+            "end_date date NOT NULL",
+            "status sprint_status_enum NOT NULL DEFAULT 'planning'",
+            "tracking_mode sprint_tracking_mode_enum NOT NULL DEFAULT 'points'",
+            "capacity_points float NULL",
+            "velocity_points float NULL",
+            "created_by uuid NOT NULL",
+            "created_at timestamptz NOT NULL DEFAULT now()"
+          ],
+          "fks": ["board_id → boards(id) ON DELETE CASCADE"],
+          "indexes": [
+            "UQ_sprints_one_active UNIQUE (board_id) WHERE status = 'active'",
+            "IDX_sprints_board_status (board_id, status)"
+          ]
+        },
+        "sprint_issues": {
+          "columns": [
+            "id uuid PK",
+            "sprint_id uuid NOT NULL",
+            "issue_id uuid NOT NULL",
+            "position int NOT NULL DEFAULT 0",
+            "added_at timestamptz NOT NULL DEFAULT now()",
+            "removed_at timestamptz NULL",
+            "moved_to_sprint_id uuid NULL"
+          ],
+          "fks": [
+            "sprint_id → sprints(id) ON DELETE CASCADE",
+            "issue_id → issues(id) ON DELETE CASCADE",
+            "moved_to_sprint_id → sprints(id) ON DELETE SET NULL"
+          ],
+          "indexes": [
+            "UQ_sprint_issues_live UNIQUE (sprint_id, issue_id) WHERE removed_at IS NULL",
+            "IDX_sprint_issues_sprint_live (sprint_id) WHERE removed_at IS NULL",
+            "IDX_sprint_issues_issue_live (issue_id) WHERE removed_at IS NULL"
+          ]
+        }
+      },
+      "acceptance": "Fresh migrate creates only target_schema.tables. No lists/cards. Partial uniques exist. FKs on issue_diagrams, notifications, assignee, priority_id, tag_id."
+    },
+    {
+      "id": "app.greenfield_entities_and_create_workspace",
+      "wave": 99,
+      "layer": "app",
+      "kind": "service_wiring",
+      "status": "deferred",
+      "depends_on": ["schema.greenfield_baseline"],
+      "intent": "Entities/DTOs/routes match baseline names. Create workspace transaction. Invite grants. Board ACL.",
+      "rules": [
+        "Entities: Board, BoardMember, BoardColumn, Issue, IssueEvent, IssueComment, IssueDiagram, SprintIssue. No Card/List types.",
+        "JSON: column_id, issue_id, priority_id, tag_id, board_id, workspace_role, board_role.",
+        "createWorkspace: single transaction — WS, owner member, 4 system priorities, first board, default columns, board_members admin.",
+        "createIssue: priority_id required or default MEDIUM of that workspace; tag_id optional same workspace.",
+        "assertBoardMember for board reads; board_role editor|admin for writes. Workspace viewer does not exist — viewer is board_role.",
+        "Invite: require ≥1 invite_board_grants. Accept: workspace_members + board_members. Conditional UPDATE on current_uses < max_uses.",
+        "completeSprint in one transaction. One active sprint per board (DB already unique).",
+        "Settings catalog: deleted_at not DELETE. Refuse delete of is_system priorities.",
+        "Home boards: WHERE board_members.membership_status=active. Owner/admin of WS may self-grant."
+      ],
+      "acceptance": "API compiles without Card/List. New workspace has 1 board and 4 priorities. Invite without grants is 400."
+    },
+    {
+      "id": "product.soft_delete_issues",
+      "wave": 99,
+      "layer": "product_decision",
+      "kind": "decide_then_implement",
+      "status": "deferred",
+      "tables": ["issues"],
+      "options": [
+        "A: Add deleted_at and filter IS NULL",
+        "B: Keep hard DELETE (current baseline)"
+      ],
+      "chosen": "B until reopened"
+    },
+    {
+      "id": "product.done_definition",
+      "wave": 99,
+      "layer": "product_decision",
+      "kind": "decide_then_implement",
+      "status": "deferred",
+      "tables": ["issues", "board_columns", "sprints"],
+      "problem": "completeSprint uses progress===100. column_type=done is unused in velocity.",
+      "options": [
+        "A: Done = issue in a column with column_type=done",
+        "B: Done = progress===100; column_type is display only",
+        "C: Moving to done column sets progress=100 in the same transaction"
+      ],
+      "chosen": null
+    }
+  ]
+}

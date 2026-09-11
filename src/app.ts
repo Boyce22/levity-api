@@ -35,6 +35,18 @@ export const swaggerOptions = {
       description: 'Documentation for the Levity API',
       version: '0.1.0',
     },
+    tags: [
+      { name: 'Health', description: 'Liveness and service info' },
+      { name: 'Auth', description: 'Login and registration' },
+      { name: 'Users', description: 'Current user and workspace people' },
+      { name: 'Workspaces', description: 'Tenants, boards, invites, members, tags and priorities' },
+      { name: 'Boards', description: 'Columns and issues' },
+      { name: 'Sprints', description: 'Sprint overlay on a board' },
+      { name: 'Comments', description: 'Issue comments' },
+      { name: 'Diagrams', description: 'Issue diagrams' },
+      { name: 'Notifications', description: 'Inbox' },
+      { name: 'Files', description: 'Avatars, covers and attachments' },
+    ],
     servers: [
       {
         url: `http://localhost:${env.PORT}`,
@@ -105,13 +117,13 @@ export async function buildApp(container: ApiContainer): Promise<AppInstance> {
     reply.status(404).send({ message: 'Route not found', path: request.url });
   });
 
-  fastify.get('/health', async () => ({
+  fastify.get('/health', { schema: { tags: ['Health'], security: [] } }, async () => ({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     environment: env.NODE_ENV,
   }));
 
-  fastify.get('/', async () => ({
+  fastify.get('/', { schema: { tags: ['Health'], security: [] } }, async () => ({
     name: 'Levity API',
     version: '1.0.0',
     endpoints: { health: '/health', api: '/api' },
