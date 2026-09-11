@@ -1,6 +1,6 @@
 export enum NotificationType {
-  MENTION = 'mention',
-  ASSIGNMENT = 'assignment',
-  REPLY = 'reply',
-  COMMENT = 'comment',
+  MENTION = 'MENTION',
+  ASSIGNMENT = 'ASSIGNMENT',
+  REPLY = 'REPLY',
+  COMMENT = 'COMMENT',
 }

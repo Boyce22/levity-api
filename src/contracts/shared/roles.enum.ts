@@ -1,34 +1,34 @@
 export enum WorkspaceRole {
-  OWNER = 'owner',
-  ADMIN = 'admin',
-  MEMBER = 'member',
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  MEMBER = 'MEMBER',
 }
 
 export enum BoardRole {
-  ADMIN = 'admin',
-  EDITOR = 'editor',
-  VIEWER = 'viewer',
+  ADMIN = 'ADMIN',
+  EDITOR = 'EDITOR',
+  VIEWER = 'VIEWER',
 }
 
 export enum MembershipStatus {
-  ACTIVE = 'active',
-  LEFT = 'left',
-  REMOVED = 'removed',
+  ACTIVE = 'ACTIVE',
+  LEFT = 'LEFT',
+  REMOVED = 'REMOVED',
 }
 
 export enum AccountStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
 }
 
 export enum WorkspaceStatus {
-  ACTIVE = 'active',
-  ARCHIVED = 'archived',
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export enum CatalogStatus {
-  ACTIVE = 'active',
-  ARCHIVED = 'archived',
+  ACTIVE = 'ACTIVE',
+  ARCHIVED = 'ARCHIVED',
 }
 
 export const WORKSPACE_MANAGE_ROLES: WorkspaceRole[] = [WorkspaceRole.OWNER, WorkspaceRole.ADMIN];

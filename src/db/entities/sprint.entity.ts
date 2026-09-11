@@ -24,10 +24,10 @@ export class Sprint {
   @Column({ type: 'date' })
   end_date!: string;
 
-  @Column({ type: 'enum', enum: ['planning', 'active', 'completed'], enumName: 'sprint_status_enum', default: 'planning' })
+  @Column({ type: 'enum', enum: ['PLANNING', 'ACTIVE', 'COMPLETED'], enumName: 'sprint_status_enum', default: 'PLANNING' })
   status!: SprintStatus;
 
-  @Column({ type: 'enum', enum: ['points', 'count', 'hours'], enumName: 'sprint_tracking_mode_enum', default: 'points' })
+  @Column({ type: 'enum', enum: ['POINTS', 'COUNT', 'HOURS'], enumName: 'sprint_tracking_mode_enum', default: 'POINTS' })
   tracking_mode!: SprintTrackingMode;
 
   @Column({ type: 'float', nullable: true })

@@ -1,5 +1,5 @@
 import { IsNull, type Repository } from 'typeorm';
-import type { CreateSprintInput, UpdateSprintInput } from '../../contracts/index';
+import { SprintStatus, type CreateSprintInput, type UpdateSprintInput } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Sprint } from '../entities/sprint.entity';
 import { type SprintIssue } from '../entities/sprint-issue.entity';
@@ -33,7 +33,7 @@ export class SprintRepository {
   }
 
   async findActiveByBoard(boardId: string): Promise<Sprint | null> {
-    return this.sprintRepo.findOne({ where: { board_id: boardId, status: 'active' } });
+    return this.sprintRepo.findOne({ where: { board_id: boardId, status: SprintStatus.ACTIVE } });
   }
 
   async create(data: CreateSprintData): Promise<Sprint> {
@@ -107,7 +107,7 @@ export class SprintRepository {
       .innerJoin('si.sprint', 's')
       .where('si.issue_id = :issueId', { issueId })
       .andWhere('si.removed_at IS NULL')
-      .andWhere('s.status = :status', { status: 'active' })
+      .andWhere('s.status = :status', { status: SprintStatus.ACTIVE })
       .getOne();
   }
 }

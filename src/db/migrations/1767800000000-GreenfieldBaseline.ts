@@ -4,16 +4,16 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
   name = 'GreenfieldBaseline1767800000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`CREATE TYPE "users_account_status_enum" AS ENUM('active', 'suspended')`);
-    await queryRunner.query(`CREATE TYPE "workspace_status_enum" AS ENUM('active', 'archived')`);
-    await queryRunner.query(`CREATE TYPE "workspace_role_enum" AS ENUM('owner', 'admin', 'member')`);
-    await queryRunner.query(`CREATE TYPE "membership_status_enum" AS ENUM('active', 'left', 'removed')`);
-    await queryRunner.query(`CREATE TYPE "board_role_enum" AS ENUM('admin', 'editor', 'viewer')`);
-    await queryRunner.query(`CREATE TYPE "board_column_type_enum" AS ENUM('todo', 'in_progress', 'review', 'done')`);
-    await queryRunner.query(`CREATE TYPE "catalog_status_enum" AS ENUM('active', 'archived')`);
-    await queryRunner.query(`CREATE TYPE "notifications_type_enum" AS ENUM('mention', 'assignment', 'reply', 'comment')`);
-    await queryRunner.query(`CREATE TYPE "sprint_status_enum" AS ENUM('planning', 'active', 'completed')`);
-    await queryRunner.query(`CREATE TYPE "sprint_tracking_mode_enum" AS ENUM('points', 'count', 'hours')`);
+    await queryRunner.query(`CREATE TYPE "users_account_status_enum" AS ENUM('ACTIVE', 'SUSPENDED')`);
+    await queryRunner.query(`CREATE TYPE "workspace_status_enum" AS ENUM('ACTIVE', 'ARCHIVED')`);
+    await queryRunner.query(`CREATE TYPE "workspace_role_enum" AS ENUM('OWNER', 'ADMIN', 'MEMBER')`);
+    await queryRunner.query(`CREATE TYPE "membership_status_enum" AS ENUM('ACTIVE', 'LEFT', 'REMOVED')`);
+    await queryRunner.query(`CREATE TYPE "board_role_enum" AS ENUM('ADMIN', 'EDITOR', 'VIEWER')`);
+    await queryRunner.query(`CREATE TYPE "board_column_type_enum" AS ENUM('TODO', 'IN_PROGRESS', 'REVIEW', 'DONE')`);
+    await queryRunner.query(`CREATE TYPE "catalog_status_enum" AS ENUM('ACTIVE', 'ARCHIVED')`);
+    await queryRunner.query(`CREATE TYPE "notifications_type_enum" AS ENUM('MENTION', 'ASSIGNMENT', 'REPLY', 'COMMENT')`);
+    await queryRunner.query(`CREATE TYPE "sprint_status_enum" AS ENUM('PLANNING', 'ACTIVE', 'COMPLETED')`);
+    await queryRunner.query(`CREATE TYPE "sprint_tracking_mode_enum" AS ENUM('POINTS', 'COUNT', 'HOURS')`);
 
     await queryRunner.query(`
       CREATE TABLE "users" (
@@ -25,7 +25,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "last_name" varchar,
         "avatar_url" varchar,
         "bio" text,
-        "account_status" "users_account_status_enum" NOT NULL DEFAULT 'active',
+        "account_status" "users_account_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "deleted_at" TIMESTAMPTZ,
         "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         "last_login_at" TIMESTAMPTZ,
@@ -47,7 +47,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       CREATE TABLE "workspaces" (
         "id" uuid NOT NULL,
         "name" varchar NOT NULL,
-        "status" "workspace_status_enum" NOT NULL DEFAULT 'active',
+        "status" "workspace_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "created_by" uuid NOT NULL,
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -62,8 +62,8 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "id" uuid NOT NULL,
         "workspace_id" uuid NOT NULL,
         "user_id" uuid NOT NULL,
-        "role" "workspace_role_enum" NOT NULL DEFAULT 'member',
-        "membership_status" "membership_status_enum" NOT NULL DEFAULT 'active',
+        "role" "workspace_role_enum" NOT NULL DEFAULT 'MEMBER',
+        "membership_status" "membership_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "joined_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         "left_at" TIMESTAMPTZ,
         "last_accessed_at" TIMESTAMPTZ,
@@ -73,7 +73,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "UQ_workspace_members_live" ON "workspace_members" ("workspace_id", "user_id") WHERE membership_status = 'active'`,
+      `CREATE UNIQUE INDEX "UQ_workspace_members_live" ON "workspace_members" ("workspace_id", "user_id") WHERE membership_status = 'ACTIVE'`,
     );
     await queryRunner.query(`CREATE INDEX "IDX_workspace_members_user_id" ON "workspace_members" ("user_id")`);
 
@@ -87,7 +87,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "current_uses" int NOT NULL DEFAULT 0,
         "expires_at" TIMESTAMPTZ,
         "revoked_at" TIMESTAMPTZ,
-        "workspace_role" "workspace_role_enum" NOT NULL DEFAULT 'member',
+        "workspace_role" "workspace_role_enum" NOT NULL DEFAULT 'MEMBER',
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         CONSTRAINT "PK_workspace_invites" PRIMARY KEY ("id"),
         CONSTRAINT "UQ_workspace_invites_token" UNIQUE ("token"),
@@ -104,7 +104,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "workspace_id" uuid NOT NULL,
         "name" varchar NOT NULL,
         "color" varchar NOT NULL,
-        "status" "catalog_status_enum" NOT NULL DEFAULT 'active',
+        "status" "catalog_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "created_by" uuid,
         "updated_by" uuid,
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -117,7 +117,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "UQ_workspace_tags_live_name" ON "workspace_tags" ("workspace_id", "name") WHERE deleted_at IS NULL AND status = 'active'`,
+      `CREATE UNIQUE INDEX "UQ_workspace_tags_live_name" ON "workspace_tags" ("workspace_id", "name") WHERE deleted_at IS NULL AND status = 'ACTIVE'`,
     );
     await queryRunner.query(
       `CREATE INDEX "IDX_workspace_tags_workspace_live" ON "workspace_tags" ("workspace_id") WHERE deleted_at IS NULL`,
@@ -133,7 +133,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "position" int NOT NULL DEFAULT 0,
         "code" varchar,
         "is_system" boolean NOT NULL DEFAULT false,
-        "status" "catalog_status_enum" NOT NULL DEFAULT 'active',
+        "status" "catalog_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "created_by" uuid,
         "updated_by" uuid,
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -148,7 +148,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "UQ_workspace_priorities_live_name" ON "workspace_priorities" ("workspace_id", "name") WHERE deleted_at IS NULL AND status = 'active'`,
+      `CREATE UNIQUE INDEX "UQ_workspace_priorities_live_name" ON "workspace_priorities" ("workspace_id", "name") WHERE deleted_at IS NULL AND status = 'ACTIVE'`,
     );
     await queryRunner.query(
       `CREATE UNIQUE INDEX "UQ_workspace_priorities_live_code" ON "workspace_priorities" ("workspace_id", "code") WHERE deleted_at IS NULL AND code IS NOT NULL`,
@@ -193,8 +193,8 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "id" uuid NOT NULL,
         "board_id" uuid NOT NULL,
         "user_id" uuid NOT NULL,
-        "role" "board_role_enum" NOT NULL DEFAULT 'editor',
-        "membership_status" "membership_status_enum" NOT NULL DEFAULT 'active',
+        "role" "board_role_enum" NOT NULL DEFAULT 'EDITOR',
+        "membership_status" "membership_status_enum" NOT NULL DEFAULT 'ACTIVE',
         "joined_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
         "left_at" TIMESTAMPTZ,
         "last_accessed_at" TIMESTAMPTZ,
@@ -204,7 +204,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "UQ_board_members_live" ON "board_members" ("board_id", "user_id") WHERE membership_status = 'active'`,
+      `CREATE UNIQUE INDEX "UQ_board_members_live" ON "board_members" ("board_id", "user_id") WHERE membership_status = 'ACTIVE'`,
     );
     await queryRunner.query(`CREATE INDEX "IDX_board_members_user_id" ON "board_members" ("user_id")`);
 
@@ -336,8 +336,8 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
         "goal" varchar,
         "start_date" date NOT NULL,
         "end_date" date NOT NULL,
-        "status" "sprint_status_enum" NOT NULL DEFAULT 'planning',
-        "tracking_mode" "sprint_tracking_mode_enum" NOT NULL DEFAULT 'points',
+        "status" "sprint_status_enum" NOT NULL DEFAULT 'PLANNING',
+        "tracking_mode" "sprint_tracking_mode_enum" NOT NULL DEFAULT 'POINTS',
         "capacity_points" float,
         "velocity_points" float,
         "created_by" uuid NOT NULL,
@@ -347,7 +347,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "UQ_sprints_one_active" ON "sprints" ("board_id") WHERE status = 'active'`,
+      `CREATE UNIQUE INDEX "UQ_sprints_one_active" ON "sprints" ("board_id") WHERE status = 'ACTIVE'`,
     );
     await queryRunner.query(`CREATE INDEX "IDX_sprints_board_status" ON "sprints" ("board_id", "status")`);
 

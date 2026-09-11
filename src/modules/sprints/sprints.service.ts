@@ -8,6 +8,10 @@ import type {
   SprintIssueResponse,
 } from '../../contracts/index';
 import {
+  SprintStatus,
+  SprintTrackingMode,
+} from '../../contracts/index';
+import {
   Sprint,
   SprintIssue,
   SprintRepository,
@@ -63,8 +67,8 @@ export class SprintService {
     await this.memberRepository.assertWrite(userId, boardId);
     const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
-    if (sprint.status !== 'planning') {
-      throw new BadRequestError('Only sprints with status "planning" can be deleted');
+    if (sprint.status !== SprintStatus.PLANNING) {
+      throw new BadRequestError('Only sprints with status "PLANNING" can be deleted');
     }
 
     await this.sprintRepository.delete(sprintId);
@@ -74,8 +78,8 @@ export class SprintService {
     await this.memberRepository.assertWrite(userId, boardId);
     const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
-    if (sprint.status !== 'planning') {
-      throw new BadRequestError('Only sprints with status "planning" can be activated');
+    if (sprint.status !== SprintStatus.PLANNING) {
+      throw new BadRequestError('Only sprints with status "PLANNING" can be activated');
     }
 
     const activeSprint = await this.sprintRepository.findActiveByBoard(boardId);
@@ -83,7 +87,7 @@ export class SprintService {
       throw new ConflictError('already an active sprint on this board');
     }
 
-    const updated = await this.sprintRepository.update(sprintId, { status: 'active' });
+    const updated = await this.sprintRepository.update(sprintId, { status: SprintStatus.ACTIVE });
     return toSprintResponse(updated);
   }
 
@@ -96,7 +100,7 @@ export class SprintService {
     await this.memberRepository.assertWrite(userId, boardId);
     const sprint = await this.requireSprintOnBoard(boardId, sprintId);
 
-    if (sprint.status !== 'active') {
+    if (sprint.status !== SprintStatus.ACTIVE) {
       throw new BadRequestError('Only active sprints can be completed');
     }
 
@@ -115,13 +119,13 @@ export class SprintService {
 
       let velocityPoints: number;
       switch (sprint.tracking_mode) {
-        case 'points':
+        case SprintTrackingMode.POINTS:
           velocityPoints = completedIssues.reduce((sum, si) => sum + (si.issue?.story_points ?? 0), 0);
           break;
-        case 'hours':
+        case SprintTrackingMode.HOURS:
           velocityPoints = completedIssues.reduce((sum, si) => sum + (si.issue?.estimated_hours ?? 0), 0);
           break;
-        case 'count':
+        case SprintTrackingMode.COUNT:
         default:
           velocityPoints = completedIssues.length;
       }
@@ -135,7 +139,7 @@ export class SprintService {
       }
 
       return sprintRepository.update(sprintId, {
-        status: 'completed',
+        status: SprintStatus.COMPLETED,
         velocity_points: velocityPoints,
       });
     });
