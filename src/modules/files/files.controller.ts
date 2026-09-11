@@ -5,12 +5,16 @@ import {
   deleteFileSchema,
   fileRouteParamsSchema,
   uploadAttachmentSchema,
+  uploadAvatarSchema,
   type UploadedFile,
 } from '../../contracts';
 import { BadRequestError } from '../../shared';
-import { validateDto } from '../../shared/http';
 import type { FilesService } from './files.service';
 import type { PreHandler } from '../auth/auth.middleware';
+
+const skipBodyValidation = {
+  validatorCompiler: () => () => true,
+};
 
 function multipartField(
   fields: Record<string, { value?: string } | Array<{ value?: string }> | undefined>,
@@ -40,26 +44,41 @@ async function readUploadedFile(request: FastifyRequest): Promise<{
 
 export function filesRoutes(service: FilesService, authenticate: PreHandler) {
   return async function (fastify: AppInstance): Promise<void> {
-    fastify.post('/attachments', { preHandler: [authenticate] }, async (request, reply) => {
-      const { file, fields } = await readUploadedFile(request);
-      const { workspace_id } = validateDto(uploadAttachmentSchema, {
-        workspace_id: multipartField(fields, 'workspace_id'),
-      });
-      const data = await service.uploadAttachment(request.user.id, workspace_id, file);
-      reply.status(201);
-      return data;
-    });
+    fastify.post(
+      '/attachments',
+      {
+        preHandler: [authenticate],
+        ...skipBodyValidation,
+        schema: { consumes: ['multipart/form-data'], body: uploadAttachmentSchema },
+      },
+      async (request, reply) => {
+        const { file, fields } = await readUploadedFile(request);
+        const workspace_id = multipartField(fields, 'workspace_id');
+        if (!workspace_id) throw new BadRequestError('workspace_id is required');
+        const data = await service.uploadAttachment(request.user.id, workspace_id, file);
+        reply.status(201);
+        return data;
+      },
+    );
 
-    fastify.post('/avatar', { preHandler: [authenticate] }, async (request, reply) => {
-      const file = await request.file();
-      if (!file) throw new BadRequestError('No file provided');
-      if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-        throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
-      }
-      const data = await service.uploadAvatar(request.user.id, file);
-      reply.status(201);
-      return data;
-    });
+    fastify.post(
+      '/avatar',
+      {
+        preHandler: [authenticate],
+        ...skipBodyValidation,
+        schema: { consumes: ['multipart/form-data'], body: uploadAvatarSchema },
+      },
+      async (request, reply) => {
+        const file = await request.file();
+        if (!file) throw new BadRequestError('No file provided');
+        if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+          throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
+        }
+        const data = await service.uploadAvatar(request.user.id, file);
+        reply.status(201);
+        return data;
+      },
+    );
 
     fastify.delete(
       '/attachments',
