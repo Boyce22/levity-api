@@ -38,6 +38,16 @@ export class IssueRepository {
     return this.repository.find({ where: { column_id: columnId }, order: { position: 'ASC' } });
   }
 
+  async countByColumn(columnId: string, excludeIds: string[] = []): Promise<number> {
+    const qb = this.repository
+      .createQueryBuilder('issue')
+      .where('issue.column_id = :columnId', { columnId });
+    if (excludeIds.length) {
+      qb.andWhere('issue.id NOT IN (:...excludeIds)', { excludeIds });
+    }
+    return qb.getCount();
+  }
+
   async create(userId: string, input: CreateIssueData): Promise<Issue> {
     const issue = this.repository.create({ ...input, created_by: userId });
     return this.repository.save(issue);

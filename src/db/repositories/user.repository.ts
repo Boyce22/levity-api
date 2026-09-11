@@ -1,4 +1,4 @@
-import { IsNull, type Repository } from 'typeorm';
+import { IsNull, In, type Repository } from 'typeorm';
 import { MembershipStatus } from '../../contracts/index';
 import { NotFoundError, ConflictError } from '../../shared/index';
 import { type User } from '../entities/user.entity';
@@ -14,6 +14,12 @@ export class UserRepository {
 
   async findByUsername(username: string): Promise<User | null> {
     return this.repository.findOne({ where: { username, deleted_at: IsNull() } });
+  }
+
+  async findLiveByUsernames(usernames: string[]): Promise<User[]> {
+    const unique = [...new Set(usernames.filter(Boolean))];
+    if (!unique.length) return [];
+    return this.repository.find({ where: { username: In(unique), deleted_at: IsNull() } });
   }
 
   async findByWorkspace(workspaceId: string, search?: string): Promise<User[]> {

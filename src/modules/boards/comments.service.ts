@@ -16,6 +16,7 @@ import {
   type BoardMemberRepository,
   type IssueRepository,
   type TransactionManager,
+  type UserRepository,
 } from '../../db/index';
 
 const MENTION_REGEX = /@(\w+)/g;
@@ -26,6 +27,7 @@ export class CommentsService {
     private readonly issueRepository: IssueRepository,
     private readonly boardColumnRepository: BoardColumnRepository,
     private readonly boardMemberRepository: BoardMemberRepository,
+    private readonly userRepository: UserRepository,
     private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
   ) {}
@@ -51,17 +53,15 @@ export class CommentsService {
   }
 
   async create(userId: string, input: CreateCommentInput): Promise<CommentResponse> {
-    await this.assertIssueBoardMember(userId, input.issue_id);
+    const boardId = await this.assertIssueBoardWrite(userId, input.issue_id);
 
     const comment = await this.transactionManager.runInTransaction(async (manager) => {
       const commentRepository = new IssueCommentRepository(manager.getRepository(IssueComment));
       const notificationRepository = new NotificationRepository(manager.getRepository(Notification));
       const createdComment = await commentRepository.create(userId, input);
 
-      const mentions = [...input.content.matchAll(MENTION_REGEX)].map((m) => m[1]);
-      if (mentions.length) {
-        await this.notifyMentions(userId, input.issue_id, createdComment.id, mentions);
-      }
+      const mentions = [...input.content.matchAll(MENTION_REGEX)].map((match) => match[1]);
+      await this.notifyMentions(userId, input.issue_id, boardId, mentions, notificationRepository);
 
       if (input.parent_id) {
         const parent = await commentRepository.findById(input.parent_id);
@@ -85,28 +85,60 @@ export class CommentsService {
   }
 
   async update(userId: string, commentId: string, input: UpdateCommentInput): Promise<CommentResponse> {
+    const existing = await this.commentRepository.findById(commentId);
+    if (!existing) throw new NotFoundError('Comment not found');
+    await this.assertIssueBoardWrite(userId, existing.issue_id);
     const comment = await this.commentRepository.update(commentId, userId, input.content);
     return toCommentResponse(comment);
   }
 
   async delete(userId: string, commentId: string): Promise<void> {
+    const existing = await this.commentRepository.findById(commentId);
+    if (!existing) throw new NotFoundError('Comment not found');
+    await this.assertIssueBoardWrite(userId, existing.issue_id);
     await this.commentRepository.delete(commentId, userId);
     this.logger.info({ commentId, userId }, 'Comment deleted');
   }
 
-  private async assertIssueBoardMember(userId: string, issueId: string): Promise<void> {
+  private async assertIssueBoardMember(userId: string, issueId: string): Promise<string> {
     const issue = await this.issueRepository.findByIdOrFail(issueId);
     const column = await this.boardColumnRepository.findByIdOrFail(issue.column_id);
     await this.boardMemberRepository.assertMember(userId, column.board_id);
+    return column.board_id;
+  }
+
+  private async assertIssueBoardWrite(userId: string, issueId: string): Promise<string> {
+    const issue = await this.issueRepository.findByIdOrFail(issueId);
+    const column = await this.boardColumnRepository.findByIdOrFail(issue.column_id);
+    await this.boardMemberRepository.assertWrite(userId, column.board_id);
+    return column.board_id;
   }
 
   private async notifyMentions(
     actorId: string,
     issueId: string,
-    _commentId: string,
+    boardId: string,
     usernames: string[],
+    notificationRepository: NotificationRepository,
   ): Promise<void> {
-    this.logger.info({ actorId, issueId, mentions: usernames }, 'Mentions detected — wire up UserRepository to resolve');
+    const unique = [...new Set(usernames)];
+    if (!unique.length) return;
+
+    const users = await this.userRepository.findLiveByUsernames(unique);
+    const candidates = users.filter((user) => user.id !== actorId);
+    const allowed = await this.boardMemberRepository.findActiveUserIds(
+      boardId,
+      candidates.map((user) => user.id),
+    );
+    const payloads = candidates
+      .filter((user) => allowed.has(user.id))
+      .map((user) => ({
+        user_id: user.id,
+        actor_id: actorId,
+        issue_id: issueId,
+        type: NotificationType.MENTION,
+      }));
+    if (payloads.length) await notificationRepository.createMany(payloads);
   }
 }
 

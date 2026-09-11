@@ -13,17 +13,20 @@ import type {
   IssueResponse,
   IssueEventResponse,
 } from '../../contracts/boards/dtos';
+import { NotificationType } from '../../contracts/index';
 import { BadRequestError, NotFoundError } from '../../shared/index';
 import {
   BoardColumn,
   BoardMember,
   Issue,
   IssueEvent,
+  Notification,
   BoardColumnRepository,
   BoardMemberRepository,
   BoardRepository,
   IssueEventRepository,
   IssueRepository,
+  NotificationRepository,
   type IssueWithCount,
   type TransactionManager,
   type WorkspacePriorityRepository,
@@ -113,6 +116,7 @@ export class BoardService {
     const column = await this.requireColumnOnBoard(input.column_id, boardId);
     const board = await this.boardRepository.findByIdOrFail(column.board_id);
     await this.boardMemberRepository.assertWrite(userId, board.id);
+    await this.assertWipAllows(column, 1);
 
     const priorityId = input.priority_id ?? (await this.defaultPriorityId(board.workspace_id));
     await this.assertPriorityInWorkspace(board.workspace_id, priorityId);
@@ -123,6 +127,7 @@ export class BoardService {
     const issue = await this.transactionManager.runInTransaction(async (manager) => {
       const issueRepository = new IssueRepository(manager.getRepository(Issue));
       const issueEventRepository = new IssueEventRepository(manager.getRepository(IssueEvent));
+      const notificationRepository = new NotificationRepository(manager.getRepository(Notification));
       const created = await issueRepository.create(userId, {
         content: input.content,
         column_id: input.column_id,
@@ -140,6 +145,16 @@ export class BoardService {
         action_type: 'created',
         field: 'issue',
       });
+      if (input.assignee_id && input.assignee_id !== userId) {
+        await notificationRepository.createMany([
+          {
+            user_id: input.assignee_id,
+            actor_id: userId,
+            issue_id: created.id,
+            type: NotificationType.ASSIGNMENT,
+          },
+        ]);
+      }
       return created;
     });
 
@@ -170,6 +185,7 @@ export class BoardService {
       const newColumn = await this.boardColumnRepository.findByIdOrFail(input.column_id);
       const newBoard = await this.boardRepository.findByIdOrFail(newColumn.board_id);
       await this.boardMemberRepository.assertWrite(userId, newBoard.id);
+      await this.assertWipAllows(newColumn, 1);
       workspaceId = newBoard.workspace_id;
       historyEntries.push({
         issue_id: issueId,
@@ -225,9 +241,24 @@ export class BoardService {
     const updated = await this.transactionManager.runInTransaction(async (manager) => {
       const issueRepository = new IssueRepository(manager.getRepository(Issue));
       const issueEventRepository = new IssueEventRepository(manager.getRepository(IssueEvent));
+      const notificationRepository = new NotificationRepository(manager.getRepository(Notification));
       const updatedIssue = await issueRepository.update(issueId, patch);
       if (historyEntries.length > 0) {
         await Promise.all(historyEntries.map((entry) => issueEventRepository.record(entry)));
+      }
+      if (
+        input.assignee_id &&
+        input.assignee_id !== issue.assignee_id &&
+        input.assignee_id !== userId
+      ) {
+        await notificationRepository.createMany([
+          {
+            user_id: input.assignee_id,
+            actor_id: userId,
+            issue_id: issueId,
+            type: NotificationType.ASSIGNMENT,
+          },
+        ]);
       }
       return updatedIssue;
     });
@@ -259,6 +290,20 @@ export class BoardService {
           if (!col || col.board_id !== boardId) {
             throw new BadRequestError('Column does not belong to this board');
           }
+        }
+
+        const newcomersByColumn = new Map<string, number>();
+        for (let i = 0; i < movingUpdates.length; i++) {
+          const issue = currentIssues[i];
+          const targetColumnId = movingUpdates[i].column_id!;
+          if (issue && issue.column_id !== targetColumnId) {
+            newcomersByColumn.set(targetColumnId, (newcomersByColumn.get(targetColumnId) ?? 0) + 1);
+          }
+        }
+        for (const col of newColumns) {
+          if (!col) continue;
+          const extra = newcomersByColumn.get(col.id) ?? 0;
+          if (extra) await this.assertWipAllows(col, extra, issueRepository);
         }
 
         const columnTitleMap = new Map(newColumns.filter(Boolean).map((c) => [c!.id, c!.title]));
@@ -307,6 +352,18 @@ export class BoardService {
       created_at: h.created_at.toISOString(),
       users: h.users,
     }));
+  }
+
+  private async assertWipAllows(
+    column: BoardColumn,
+    extra: number,
+    issueRepository: IssueRepository = this.issueRepository,
+  ): Promise<void> {
+    if (column.wip_limit == null || extra <= 0) return;
+    const count = await issueRepository.countByColumn(column.id);
+    if (count + extra > column.wip_limit) {
+      throw new BadRequestError('Column WIP limit reached');
+    }
   }
 
   private async requireColumnOnBoard(columnId: string, boardId: string): Promise<BoardColumn> {

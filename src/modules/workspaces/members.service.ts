@@ -10,6 +10,7 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../shared/inde
 import {
   BoardMember,
   BoardMemberRepository,
+  BoardRepository,
   InviteBoardGrant,
   InviteBoardGrantRepository,
   WorkspaceInvite,
@@ -25,6 +26,7 @@ export class MembersService {
     private readonly inviteRepository: WorkspaceInviteRepository,
     private readonly grantRepository: InviteBoardGrantRepository,
     private readonly boardMemberRepository: BoardMemberRepository,
+    private readonly boardRepository: BoardRepository,
     private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
   ) {}
@@ -44,6 +46,16 @@ export class MembersService {
 
     if (!input.board_grants?.length) {
       throw new BadRequestError('board_grants is required');
+    }
+
+    const grantBoardIds = [...new Set(input.board_grants.map((grant) => grant.board_id))];
+    if (grantBoardIds.length !== input.board_grants.length) {
+      throw new BadRequestError('board_grants cannot repeat a board');
+    }
+    const workspaceBoards = await this.boardRepository.findByWorkspace(workspaceId);
+    const liveBoardIds = new Set(workspaceBoards.map((board) => board.id));
+    if (grantBoardIds.some((boardId) => !liveBoardIds.has(boardId))) {
+      throw new BadRequestError('board_grants must belong to this workspace');
     }
 
     const expiresAt = input.expires_in_hours

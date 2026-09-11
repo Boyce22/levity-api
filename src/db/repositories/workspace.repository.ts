@@ -1,4 +1,4 @@
-import type { Repository } from 'typeorm';
+import { IsNull, type Repository } from 'typeorm';
 import { MembershipStatus } from '../../contracts/index';
 import { NotFoundError } from '../../shared/index';
 import { type Workspace } from '../entities/workspace.entity';
@@ -17,7 +17,7 @@ export class WorkspaceRepository {
   constructor(private readonly repository: Repository<Workspace>) {}
 
   async findById(id: string): Promise<Workspace | null> {
-    return this.repository.findOne({ where: { id } });
+    return this.repository.findOne({ where: { id, deleted_at: IsNull() } });
   }
 
   async findByIdOrFail(id: string): Promise<Workspace> {
@@ -114,7 +114,8 @@ export class WorkspaceRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const result = await this.repository.delete(id);
-    if (!result.affected) throw new NotFoundError('Workspace not found');
+    const ws = await this.findByIdOrFail(id);
+    ws.deleted_at = new Date();
+    await this.repository.save(ws);
   }
 }

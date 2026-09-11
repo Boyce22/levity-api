@@ -23,14 +23,14 @@ export class DiagramsService {
   }
 
   async save(userId: string, input: SaveDiagramInput): Promise<DiagramResponse> {
-    await this.assertIssueBoardMember(userId, input.issue_id);
+    await this.assertIssueBoardWrite(userId, input.issue_id);
 
     const diagram = await this.diagramRepository.upsert(input.issue_id, input.data);
     return toDiagramResponse(diagram);
   }
 
   async delete(userId: string, issueId: string): Promise<void> {
-    await this.assertIssueBoardMember(userId, issueId);
+    await this.assertIssueBoardWrite(userId, issueId);
 
     await this.diagramRepository.delete(issueId);
   }
@@ -39,6 +39,12 @@ export class DiagramsService {
     const issue = await this.issueRepository.findByIdOrFail(issueId);
     const column = await this.boardColumnRepository.findByIdOrFail(issue.column_id);
     await this.boardMemberRepository.assertMember(userId, column.board_id);
+  }
+
+  private async assertIssueBoardWrite(userId: string, issueId: string): Promise<void> {
+    const issue = await this.issueRepository.findByIdOrFail(issueId);
+    const column = await this.boardColumnRepository.findByIdOrFail(issue.column_id);
+    await this.boardMemberRepository.assertWrite(userId, column.board_id);
   }
 }
 

@@ -1,4 +1,4 @@
-import type { Repository } from 'typeorm';
+import { In, type Repository } from 'typeorm';
 import { BoardRole, MembershipStatus, canWriteBoard } from '../../contracts/index';
 import { ForbiddenError } from '../../shared/index';
 import { type BoardMember } from '../entities/board-member.entity';
@@ -25,10 +25,27 @@ export class BoardMemberRepository {
     return this.repository.findOne({ where: { board_id: boardId, user_id: userId } });
   }
 
-  async assertMember(userId: string, boardId: string): Promise<BoardMember> {
-    const member = await this.repository.findOne({
-      where: { board_id: boardId, user_id: userId, membership_status: MembershipStatus.ACTIVE },
+  async findActiveUserIds(boardId: string, userIds: string[]): Promise<Set<string>> {
+    const unique = [...new Set(userIds)];
+    if (!unique.length) return new Set();
+    const rows = await this.repository.find({
+      where: { board_id: boardId, user_id: In(unique), membership_status: MembershipStatus.ACTIVE },
+      select: ['user_id'],
     });
+    return new Set(rows.map((row) => row.user_id));
+  }
+
+  async assertMember(userId: string, boardId: string): Promise<BoardMember> {
+    const member = await this.repository
+      .createQueryBuilder('bm')
+      .innerJoin('boards', 'board', 'board.id = bm.board_id')
+      .innerJoin('workspaces', 'workspace', 'workspace.id = board.workspace_id')
+      .where('bm.user_id = :userId', { userId })
+      .andWhere('bm.board_id = :boardId', { boardId })
+      .andWhere('bm.membership_status = :status', { status: MembershipStatus.ACTIVE })
+      .andWhere('board.deleted_at IS NULL')
+      .andWhere('workspace.deleted_at IS NULL')
+      .getOne();
     if (!member) throw new ForbiddenError('Not a member of this board');
     return member;
   }

@@ -19,9 +19,14 @@ export class WorkspaceMemberRepository {
   }
 
   async assertMember(userId: string, workspaceId: string): Promise<WorkspaceMember> {
-    const member = await this.repository.findOne({
-      where: { user_id: userId, workspace_id: workspaceId, membership_status: MembershipStatus.ACTIVE },
-    });
+    const member = await this.repository
+      .createQueryBuilder('wm')
+      .innerJoin('workspaces', 'w', 'w.id = wm.workspace_id')
+      .where('wm.user_id = :userId', { userId })
+      .andWhere('wm.workspace_id = :workspaceId', { workspaceId })
+      .andWhere('wm.membership_status = :status', { status: MembershipStatus.ACTIVE })
+      .andWhere('w.deleted_at IS NULL')
+      .getOne();
     if (!member) throw new ForbiddenError('Not a member of this workspace');
     return member;
   }

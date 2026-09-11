@@ -146,6 +146,7 @@ export function createApiContainer(): ApiContainer {
     inviteRepository,
     grantRepository,
     boardMemberRepository,
+    boardRepository,
     transactionManager,
     logger.child({ name: 'members' }),
   );
@@ -173,6 +174,7 @@ export function createApiContainer(): ApiContainer {
     issueRepository,
     boardColumnRepository,
     boardMemberRepository,
+    userRepository,
     transactionManager,
     logger.child({ name: 'comments' }),
   );
