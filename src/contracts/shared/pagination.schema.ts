@@ -1,9 +1,8 @@
-import { Type, type StaticDecode } from '@sinclair/typebox';
-import { coerceNumberSchema } from './typebox';
+import { Type, type Static } from '@sinclair/typebox';
 
 export const paginationSchema = Type.Object({
-  page: coerceNumberSchema({ integer: true, min: 1, defaultValue: 1 }),
-  limit: coerceNumberSchema({ integer: true, min: 1, max: 100, defaultValue: 20 }),
+  page: Type.Integer({ minimum: 1, default: 1 }),
+  limit: Type.Integer({ minimum: 1, maximum: 100, default: 20 }),
 });
 
-export type PaginationInput = StaticDecode<typeof paginationSchema>;
+export type PaginationInput = Static<typeof paginationSchema>;

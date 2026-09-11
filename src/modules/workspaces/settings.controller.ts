@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { AppInstance } from '../../app';
 import {
   createTagSchema,
   createPrioritySchema,
@@ -6,48 +6,56 @@ import {
   tagParamsSchema,
   priorityParamsSchema,
 } from '../../contracts';
-import { validateDto } from '../../shared/http';
 import type { SettingsService } from './settings.service';
 import type { PreHandler } from '../auth/auth.middleware';
 
 export function settingsRoutes(service: SettingsService, authenticate: PreHandler) {
-  return async function (fastify: FastifyInstance): Promise<void> {
-    fastify.get('/:id/tags', { preHandler: [authenticate] }, async (request) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      return service.getTags(request.user.id, id);
+  return async function (fastify: AppInstance): Promise<void> {
+
+    fastify.get('/:id/tags', { preHandler: [authenticate], schema: { params: idParamsSchema } }, async (request) => {
+      return service.getTags(request.user.id, request.params.id);
     });
 
-    fastify.post('/:id/tags', { preHandler: [authenticate], schema: { body: createTagSchema } }, async (request, reply) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      const input = validateDto(createTagSchema, request.body);
-      const data = await service.createTag(request.user.id, id, input);
-      reply.status(201);
-      return data;
+    fastify.post(
+      '/:id/tags',
+      { preHandler: [authenticate], schema: { params: idParamsSchema, body: createTagSchema } },
+      async (request, reply) => {
+        const data = await service.createTag(request.user.id, request.params.id, request.body);
+        reply.status(201);
+        return data;
+      },
+    );
+
+    fastify.delete(
+      '/:id/tags/:tagId',
+      { preHandler: [authenticate], schema: { params: tagParamsSchema } },
+      async (request, reply) => {
+        await service.deleteTag(request.user.id, request.params.id, request.params.tagId);
+        reply.status(204).send();
+      },
+    );
+
+    fastify.get('/:id/priorities', { preHandler: [authenticate], schema: { params: idParamsSchema } }, async (request) => {
+      return service.getPriorities(request.user.id, request.params.id);
     });
 
-    fastify.delete('/:id/tags/:tagId', { preHandler: [authenticate] }, async (request, reply) => {
-      const { id, tagId } = validateDto(tagParamsSchema, request.params);
-      await service.deleteTag(request.user.id, id, tagId);
-      reply.status(204).send();
-    });
+    fastify.post(
+      '/:id/priorities',
+      { preHandler: [authenticate], schema: { params: idParamsSchema, body: createPrioritySchema } },
+      async (request, reply) => {
+        const data = await service.createPriority(request.user.id, request.params.id, request.body);
+        reply.status(201);
+        return data;
+      },
+    );
 
-    fastify.get('/:id/priorities', { preHandler: [authenticate] }, async (request) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      return service.getPriorities(request.user.id, id);
-    });
-
-    fastify.post('/:id/priorities', { preHandler: [authenticate], schema: { body: createPrioritySchema } }, async (request, reply) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      const input = validateDto(createPrioritySchema, request.body);
-      const data = await service.createPriority(request.user.id, id, input);
-      reply.status(201);
-      return data;
-    });
-
-    fastify.delete('/:id/priorities/:priorityId', { preHandler: [authenticate] }, async (request, reply) => {
-      const { id, priorityId } = validateDto(priorityParamsSchema, request.params);
-      await service.deletePriority(request.user.id, id, priorityId);
-      reply.status(204).send();
-    });
+    fastify.delete(
+      '/:id/priorities/:priorityId',
+      { preHandler: [authenticate], schema: { params: priorityParamsSchema } },
+      async (request, reply) => {
+        await service.deletePriority(request.user.id, request.params.id, request.params.priorityId);
+        reply.status(204).send();
+      },
+    );
   };
 }

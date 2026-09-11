@@ -1,18 +1,10 @@
+
 import { Type } from '@sinclair/typebox';
 
-const uuidPattern =
-  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
-
-const emailPattern = /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+.-]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
-const dateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
-
-export const uuidSchema = Type.String({ pattern: uuidPattern.source });
-export const emailSchema = Type.String({ pattern: emailPattern.source });
-export const dateTimeSchema = Type.String({ pattern: dateTimePattern.source });
-
-export function dateOnlySchema() {
-  return Type.String({ pattern: /^\d{4}-\d{2}-\d{2}$/.source });
-}
+export const uuidSchema = Type.String({ format: 'uuid' });
+export const emailSchema = Type.String({ format: 'email' });
+export const dateTimeSchema = Type.String({ format: 'date-time' });
+export const dateOnlySchema = Type.String({ format: 'date' });
 
 export interface CoerceNumberOptions {
   integer?: boolean;
@@ -22,7 +14,7 @@ export interface CoerceNumberOptions {
   defaultValue?: number;
 }
 
-class SchemaTransformError extends Error {}
+class SchemaTransformError extends Error { }
 
 /** A TypeBox transform for the explicit string-to-number coercions used by query/env inputs. */
 export function coerceNumberSchema(options: CoerceNumberOptions = {}) {

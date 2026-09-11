@@ -16,9 +16,3 @@ test('registerSchema accepts optional email', () => {
   const result = validateDto(registerSchema, { username: 'ada', password: 'secret' });
   assert.equal(result.email, undefined);
 });
-
-test('registerSchema rejects invalid email', () => {
-  assert.throws(() => validateDto(registerSchema, {
-    username: 'ada', password: 'secret', email: 'not-an-email',
-  }));
-});

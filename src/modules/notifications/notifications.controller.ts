@@ -1,21 +1,27 @@
-import type { FastifyInstance } from 'fastify';
+import type { AppInstance } from '../../app';
 import { queryNotificationsSchema, idParamsSchema } from '../../contracts';
-import { validateDto } from '../../shared/http';
 import type { NotificationsService } from './notifications.service';
 import type { PreHandler } from '../auth/auth.middleware';
 
 export function notificationsRoutes(service: NotificationsService, authenticate: PreHandler) {
-  return async function (fastify: FastifyInstance): Promise<void> {
-    fastify.get('/', { preHandler: [authenticate], schema: { querystring: queryNotificationsSchema } }, async (request) => {
-      const query = validateDto(queryNotificationsSchema, request.query);
-      return service.getNotifications(request.user.id, query);
-    });
+  return async function (fastify: AppInstance): Promise<void> {
 
-    fastify.patch('/:id/read', { preHandler: [authenticate] }, async (request, reply) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      await service.markRead(request.user.id, id);
-      reply.status(204).send();
-    });
+    fastify.get(
+      '/',
+      { preHandler: [authenticate], schema: { querystring: queryNotificationsSchema } },
+      async (request) => {
+        return service.getNotifications(request.user.id, request.query);
+      },
+    );
+
+    fastify.patch(
+      '/:id/read',
+      { preHandler: [authenticate], schema: { params: idParamsSchema } },
+      async (request, reply) => {
+        await service.markRead(request.user.id, request.params.id);
+        reply.status(204).send();
+      },
+    );
 
     fastify.post('/read-all', { preHandler: [authenticate] }, async (request, reply) => {
       await service.markAllRead(request.user.id);

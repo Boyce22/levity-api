@@ -9,12 +9,6 @@ test('paginationSchema applies defaults', () => {
   assert.equal(result.limit, 20);
 });
 
-test('paginationSchema coerces query strings', () => {
-  const result = validateDto(paginationSchema, { page: '2', limit: '50' });
-  assert.equal(result.page, 2);
-  assert.equal(result.limit, 50);
-});
-
 test('paginationSchema rejects limit above max', () => {
   assert.throws(() => validateDto(paginationSchema, { limit: 101 }));
 });

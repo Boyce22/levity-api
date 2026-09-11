@@ -1,14 +1,14 @@
-import { Type, type Static, type StaticDecode } from '@sinclair/typebox';
+import { Type, type Static } from '@sinclair/typebox';
 import { NotificationType } from '../shared/notification-type.enum';
-import { booleanQuerySchema, coerceNumberSchema, dateTimeSchema, uuidSchema } from '../shared/typebox';
+import { dateTimeSchema, uuidSchema } from '../shared/typebox';
 
 export const queryNotificationsSchema = Type.Object({
-  read: Type.Optional(booleanQuerySchema),
+  read: Type.Optional(Type.Boolean()),
   cursor: Type.Optional(dateTimeSchema),
-  page: coerceNumberSchema({ integer: true, positive: true, defaultValue: 1 }),
-  limit: coerceNumberSchema({ integer: true, positive: true, max: 50, defaultValue: 20 }),
+  page: Type.Integer({ minimum: 1, default: 1 }),
+  limit: Type.Integer({ minimum: 1, maximum: 50, default: 20 }),
 });
-export type QueryNotificationsInput = StaticDecode<typeof queryNotificationsSchema>;
+export type QueryNotificationsInput = Static<typeof queryNotificationsSchema>;
 
 export const createNotificationSchema = Type.Object({
   user_id: uuidSchema,

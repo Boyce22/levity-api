@@ -14,6 +14,8 @@ export const sprintIdParamsSchema = Type.Object({ sprintId: uuid });
 export const boardIdParamsSchema = Type.Object({ boardId: uuid });
 export const columnIdParamsSchema = Type.Object({ columnId: uuid });
 export const issueIdParamsSchema = Type.Object({ issueId: uuid });
+export const boardColumnParamsSchema = Type.Object({ boardId: uuid, columnId: uuid });
+export const boardIssueParamsSchema = Type.Object({ boardId: uuid, issueId: uuid });
 
 export type IdParams = Static<typeof idParamsSchema>;
 export type TokenParams = Static<typeof tokenParamsSchema>;
@@ -26,3 +28,5 @@ export type SprintIdParams = Static<typeof sprintIdParamsSchema>;
 export type BoardIdParams = Static<typeof boardIdParamsSchema>;
 export type ColumnIdParams = Static<typeof columnIdParamsSchema>;
 export type IssueIdParams = Static<typeof issueIdParamsSchema>;
+export type BoardColumnParams = Static<typeof boardColumnParamsSchema>;
+export type BoardIssueParams = Static<typeof boardIssueParamsSchema>;

@@ -1,4 +1,5 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
+import type { AppInstance } from '../../app';
 import {
   ALLOWED_IMAGE_TYPES,
   deleteFileSchema,
@@ -38,7 +39,7 @@ async function readUploadedFile(request: FastifyRequest): Promise<{
 }
 
 export function filesRoutes(service: FilesService, authenticate: PreHandler) {
-  return async function (fastify: FastifyInstance): Promise<void> {
+  return async function (fastify: AppInstance): Promise<void> {
     fastify.post('/attachments', { preHandler: [authenticate] }, async (request, reply) => {
       const { file, fields } = await readUploadedFile(request);
       const { workspace_id } = validateDto(uploadAttachmentSchema, {
@@ -49,46 +50,32 @@ export function filesRoutes(service: FilesService, authenticate: PreHandler) {
       return data;
     });
 
-    fastify.post(
-      '/avatar',
-      {
-        preHandler: [authenticate],
-      },
+    fastify.post('/avatar', { preHandler: [authenticate] }, async (request, reply) => {
+      const file = await request.file();
+      if (!file) throw new BadRequestError('No file provided');
+      if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+        throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
+      }
+      const data = await service.uploadAvatar(request.user.id, file);
+      reply.status(201);
+      return data;
+    });
+
+    fastify.delete(
+      '/attachments',
+      { preHandler: [authenticate], schema: { body: deleteFileSchema } },
       async (request, reply) => {
-        const file = await request.file();
-
-        if (!file) {
-          throw new BadRequestError('No file provided');
-        }
-
-        if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
-          throw new BadRequestError(
-            `File type not allowed: ${file.mimetype}`,
-          );
-        }
-
-        const data = await service.uploadAvatar(
-          request.user.id,
-          file,
-        );
-
-        reply.status(201);
-
-        return data;
+        const { workspace_id, key } = request.body;
+        await service.deleteFile(request.user.id, workspace_id, key);
+        reply.status(204).send();
       },
     );
 
-    fastify.delete('/attachments', { preHandler: [authenticate], schema: { body: deleteFileSchema } }, async (request, reply) => {
-      const { workspace_id, key } = validateDto(deleteFileSchema, request.body);
-      await service.deleteFile(request.user.id, workspace_id, key);
-      reply.status(204).send();
-    });
-
     fastify.get(
       '/:workspaceName/:workspaceId/:category/:fileName',
-      { preHandler: [authenticate] },
+      { preHandler: [authenticate], schema: { params: fileRouteParamsSchema } },
       async (request, reply) => {
-        const { workspaceId, category, fileName } = validateDto(fileRouteParamsSchema, request.params);
+        const { workspaceId, category, fileName } = request.params;
         const url = await service.getSignedDownloadUrl(request.user.id, workspaceId, category, fileName);
         return reply.type('application/json').send(JSON.stringify(url));
       },

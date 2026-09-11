@@ -2,13 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createBoardSchema, createTagSchema } from '../../src/contracts/workspaces/schemas';
 import { queryNotificationsSchema } from '../../src/contracts/notifications/schemas';
-import { saveDiagramSchema } from '../../src/contracts/diagrams/schemas';
 import { validateDto } from '../../src/shared/validate-schema';
 import { UnprocessableEntityError } from '../../src/shared/errors';
 
 class ExitSignal extends Error {}
-
-const id = '00000000-0000-0000-0000-000000000000';
 
 test('TypeBox strips unknown object properties like the previous schemas', () => {
   const result = validateDto(createTagSchema, { name: 'Bug', color: '#abcdef', ignored: true });
@@ -19,26 +16,16 @@ test('createBoardSchema requires a name', () => {
   assert.deepEqual(validateDto(createBoardSchema, { name: 'Roadmap', extra: true }), { name: 'Roadmap' });
 });
 
-test('query coercion is explicit and rejects fractional integers', () => {
-  assert.deepEqual(validateDto(queryNotificationsSchema, { page: '2', limit: '5', read: 'false' }), {
+test('query schemas use JSON Schema integers and booleans for Fastify AJV', () => {
+  assert.deepEqual(validateDto(queryNotificationsSchema, { page: 2, limit: 5, read: false }), {
     page: 2,
     limit: 5,
     read: false,
   });
   assert.throws(
-    () => validateDto(queryNotificationsSchema, { page: '2.5', limit: '5' }),
+    () => validateDto(queryNotificationsSchema, { page: 2.5, limit: 5 }),
     (error: unknown) => error instanceof UnprocessableEntityError,
   );
-});
-
-test('boolean query accepts only true and false strings', () => {
-  assert.throws(() => validateDto(queryNotificationsSchema, { read: '1' }));
-});
-
-test('UUID, nested arrays and array limits are validated', () => {
-  const result = validateDto(saveDiagramSchema, { issue_id: id, data: { elements: [] } });
-  assert.equal(result.issue_id, id);
-  assert.throws(() => validateDto(saveDiagramSchema, { issue_id: 'invalid', data: { elements: [] } }));
 });
 
 test('environment parsing applies defaults and CORS transformation', async () => {

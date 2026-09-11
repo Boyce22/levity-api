@@ -1,10 +1,10 @@
-import type { FastifyInstance } from 'fastify';
+import type { AppInstance } from './app';
 import type { ApiContainer } from './composition';
 
 export function buildRoutes(container: ApiContainer) {
   const { plugins } = container;
 
-  return async function routes(fastify: FastifyInstance): Promise<void> {
+  return async function routes(fastify: AppInstance): Promise<void> {
     await fastify.register(plugins.auth, { prefix: '/auth' });
     await fastify.register(plugins.users, { prefix: '/users' });
     await fastify.register(plugins.workspaces, { prefix: '/workspaces' });

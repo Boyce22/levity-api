@@ -1,17 +1,32 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, {
+  type FastifyBaseLogger,
+  type FastifyInstance,
+  type RawReplyDefaultExpression,
+  type RawRequestDefaultExpression,
+  type RawServerDefault,
+} from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import compress from '@fastify/compress';
 import rateLimit from '@fastify/rate-limit';
-import multipart, { ajvFilePlugin } from '@fastify/multipart';
+import multipart from '@fastify/multipart';
 import { fastifySwagger } from '@fastify/swagger';
-import { fastifySwaggerUi } from '@fastify/swagger-ui'; 
+import { fastifySwaggerUi } from '@fastify/swagger-ui';
+import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 
 import { env } from './config';
 import { MAX_IMAGE_SIZE_BYTES } from './contracts';
 import type { ApiContainer } from './composition';
 import { createErrorHandler } from './shared/http';
 import { buildRoutes } from './routes';
+
+export type AppInstance = FastifyInstance<
+  RawServerDefault,
+  RawRequestDefaultExpression,
+  RawReplyDefaultExpression,
+  FastifyBaseLogger,
+  TypeBoxTypeProvider
+>;
 
 export const swaggerOptions = {
   openapi: {
@@ -39,21 +54,27 @@ export const swaggerOptions = {
   },
 };
 
-export async function buildApp(container: ApiContainer): Promise<FastifyInstance> {
+export async function buildApp(container: ApiContainer): Promise<AppInstance> {
   const { logger } = container;
 
   const fastify = Fastify({
+    ajv: {
+      customOptions: {
+        coerceTypes: true,
+      },
+      plugins: [require('ajv-formats')],
+    },
     logger: {
       level: env.LOG_LEVEL,
     },
     trustProxy: true,
     bodyLimit: MAX_IMAGE_SIZE_BYTES,
-  });
+  }).withTypeProvider<TypeBoxTypeProvider>();
 
   await fastify.register(fastifySwagger, swaggerOptions);
 
   await fastify.register(fastifySwaggerUi, {
-    routePrefix: '/docs', 
+    routePrefix: '/docs',
   });
 
   await fastify.register(helmet, { contentSecurityPolicy: env.NODE_ENV === 'production' });

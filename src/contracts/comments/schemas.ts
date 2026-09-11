@@ -1,5 +1,5 @@
-import { Type, type Static, type StaticDecode } from '@sinclair/typebox';
-import { coerceNumberSchema, uuidSchema } from '../shared/typebox';
+import { Type, type Static } from '@sinclair/typebox';
+import { uuidSchema } from '../shared/typebox';
 
 export const createCommentSchema = Type.Object({
   issue_id: uuidSchema,
@@ -15,7 +15,7 @@ export type UpdateCommentInput = Static<typeof updateCommentSchema>;
 
 export const queryCommentsSchema = Type.Object({
   issue_id: uuidSchema,
-  limit: coerceNumberSchema({ integer: true, positive: true, max: 50, defaultValue: 20 }),
+  limit: Type.Integer({ minimum: 1, maximum: 50, default: 20 }),
   cursor: Type.Optional(Type.String()),
 });
-export type QueryCommentsInput = StaticDecode<typeof queryCommentsSchema>;
+export type QueryCommentsInput = Static<typeof queryCommentsSchema>;

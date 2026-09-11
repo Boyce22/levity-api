@@ -1,37 +1,39 @@
-import type { FastifyInstance } from 'fastify';
+import type { AppInstance } from '../../app';
 import { createCommentSchema, updateCommentSchema, queryCommentsSchema, idParamsSchema } from '../../contracts';
-import { validateDto } from '../../shared/http';
 import type { CommentsService } from './comments.service';
 import type { PreHandler } from '../auth/auth.middleware';
 
 export function commentsRoutes(service: CommentsService, authenticate: PreHandler) {
-  return async function (fastify: FastifyInstance): Promise<void> {
-    fastify.get('/:id/replies', { preHandler: [authenticate] }, async (request) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      return service.getReplies(request.user.id, id);
-    });
+  return async function (fastify: AppInstance): Promise<void> {
 
-    fastify.get('/', { preHandler: [authenticate] }, async (request) => {
-      const query = validateDto(queryCommentsSchema, request.query);
-      return service.getComments(request.user.id, query);
+    fastify.get(
+      '/:id/replies',
+      { preHandler: [authenticate], schema: { params: idParamsSchema } },
+      async (request) => {
+        return service.getReplies(request.user.id, request.params.id);
+      },
+    );
+
+    fastify.get('/', { preHandler: [authenticate], schema: { querystring: queryCommentsSchema } }, async (request) => {
+      return service.getComments(request.user.id, request.query);
     });
 
     fastify.post('/', { preHandler: [authenticate], schema: { body: createCommentSchema } }, async (request, reply) => {
-      const input = validateDto(createCommentSchema, request.body);
-      const data = await service.create(request.user.id, input);
+      const data = await service.create(request.user.id, request.body);
       reply.status(201);
       return data;
     });
 
-    fastify.patch('/:id', { preHandler: [authenticate], schema: { body: updateCommentSchema } }, async (request) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      const input = validateDto(updateCommentSchema, request.body);
-      return service.update(request.user.id, id, input);
-    });
+    fastify.patch(
+      '/:id',
+      { preHandler: [authenticate], schema: { params: idParamsSchema, body: updateCommentSchema } },
+      async (request) => {
+        return service.update(request.user.id, request.params.id, request.body);
+      },
+    );
 
-    fastify.delete('/:id', { preHandler: [authenticate] }, async (request, reply) => {
-      const { id } = validateDto(idParamsSchema, request.params);
-      await service.delete(request.user.id, id);
+    fastify.delete('/:id', { preHandler: [authenticate], schema: { params: idParamsSchema } }, async (request, reply) => {
+      await service.delete(request.user.id, request.params.id);
       reply.status(204).send();
     });
   };

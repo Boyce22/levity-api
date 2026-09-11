@@ -2,7 +2,7 @@ import { Type, type Static } from '@sinclair/typebox';
 import { SprintTrackingMode } from './enums';
 import { dateOnlySchema, uuidSchema } from '../shared/typebox';
 
-const dateSchema = dateOnlySchema();
+
 
 export const sprintIssueParamsSchema = Type.Object({ sprintId: uuidSchema, issueId: uuidSchema });
 export const boardSprintParamsSchema = Type.Object({ boardId: uuidSchema, sprintId: uuidSchema });
@@ -15,8 +15,8 @@ export const boardSprintIssueParamsSchema = Type.Object({
 export const createSprintSchema = Type.Object({
   name: Type.String({ minLength: 1, maxLength: 100 }),
   goal: Type.Optional(Type.String({ maxLength: 500 })),
-  start_date: dateSchema,
-  end_date: dateSchema,
+  start_date: Type.String({ format: 'date' }),
+  end_date: Type.String({ format: 'date' }),
   tracking_mode: Type.Enum(SprintTrackingMode),
   capacity_points: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
 });
@@ -24,8 +24,8 @@ export const createSprintSchema = Type.Object({
 export const updateSprintSchema = Type.Object({
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
   goal: Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()])),
-  start_date: Type.Optional(dateSchema),
-  end_date: Type.Optional(dateSchema),
+  start_date: Type.Optional(Type.String({ format: 'date' })),
+  end_date: Type.Optional(Type.String({ format: 'date' })),
   tracking_mode: Type.Optional(Type.Enum(SprintTrackingMode)),
   capacity_points: Type.Optional(Type.Union([Type.Number({ exclusiveMinimum: 0 }), Type.Null()])),
 });
