@@ -1,8 +1,10 @@
-import type { BoardRole, CatalogStatus, MembershipStatus, WorkspaceRole } from '../shared/roles.enum';
+import type { BoardRole, CatalogStatus, MembershipStatus, WorkspaceRole, WorkspaceStatus } from '../shared/roles.enum';
+import type { UserSummary } from '../users/dtos';
 
 export interface WorkspaceResponse {
   id: string;
   name: string;
+  status: WorkspaceStatus;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -13,9 +15,11 @@ export interface WorkspaceMemberResponse {
   workspace_id: string;
   user_id: string;
   role: WorkspaceRole;
+  membership_status: MembershipStatus;
   joined_at: string;
-  membership_status?: MembershipStatus;
-  user?: { username: string; first_name?: string; last_name?: string; avatar_url?: string };
+  left_at?: string;
+  last_accessed_at?: string;
+  user?: Omit<UserSummary, 'id'> & { username: string };
 }
 
 export interface InviteBoardGrantResponse {
@@ -34,7 +38,7 @@ export interface WorkspaceInviteResponse {
   revoked_at?: string;
   workspace_role: WorkspaceRole;
   created_at: string;
-  grants?: InviteBoardGrantResponse[];
+  grants: InviteBoardGrantResponse[];
 }
 
 export interface WorkspaceTagResponse {
@@ -42,8 +46,9 @@ export interface WorkspaceTagResponse {
   workspace_id: string;
   name: string;
   color: string;
+  status: CatalogStatus;
   created_at: string;
-  status?: CatalogStatus;
+  updated_at: string;
 }
 
 export interface WorkspacePriorityResponse {
@@ -53,15 +58,39 @@ export interface WorkspacePriorityResponse {
   color: string;
   icon: string;
   position: number;
-  created_at: string;
   code?: string | null;
   is_system: boolean;
   status: CatalogStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BoardSummaryResponse {
+  id: string;
+  workspace_id: string;
+  name: string;
+  position: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface HomeBoardResponse {
   id: string;
+  workspace_id: string;
   name: string;
   position: number;
   role: BoardRole;
+}
+
+export interface BoardMemberResponse {
+  id: string;
+  board_id: string;
+  user_id: string;
+  role: BoardRole;
+  membership_status: MembershipStatus;
+  joined_at: string;
+  left_at?: string;
+  last_accessed_at?: string;
+  user?: Omit<UserSummary, 'id'>;
 }

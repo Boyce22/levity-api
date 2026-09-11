@@ -1,3 +1,5 @@
+import type { UserSummary } from '../users/dtos';
+
 export interface CommentResponse {
   id: string;
   issue_id: string;
@@ -5,11 +7,6 @@ export interface CommentResponse {
   parent_id?: string | null;
   content: string;
   created_at: string;
-  user?: {
-    username: string;
-    first_name?: string;
-    last_name?: string;
-    avatar_url?: string;
-  };
+  user?: Omit<UserSummary, 'id'>;
   replies?: CommentResponse[];
 }

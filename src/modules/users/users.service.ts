@@ -45,6 +45,9 @@ function toUserResponse(user: User): UserResponse {
     avatar_url: user.avatar_url ?? undefined,
     bio: user.bio ?? undefined,
     email: user.email ?? undefined,
+    account_status: user.account_status,
+    updated_at: user.updated_at.toISOString(),
+    last_login_at: user.last_login_at?.toISOString(),
     created_at: user.created_at.toISOString(),
   };
 }

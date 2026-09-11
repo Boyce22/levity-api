@@ -33,4 +33,10 @@ export class BoardRepository {
     const board = this.repository.create(data);
     return this.repository.save(board);
   }
+
+  async rename(id: string, name: string): Promise<Board> {
+    const board = await this.findByIdOrFail(id);
+    board.name = name;
+    return this.repository.save(board);
+  }
 }

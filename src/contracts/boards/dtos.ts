@@ -1,4 +1,6 @@
 import type { BoardColumnType } from '../shared/board-column-type.enum';
+import type { UserSummary } from '../users/dtos';
+import type { BoardSummaryResponse } from '../workspaces/dtos';
 
 export interface IssueResponse {
   id: string;
@@ -21,40 +23,29 @@ export interface IssueResponse {
 
 export interface BoardColumnResponse {
   id: string;
+  board_id: string;
   title: string;
   position: number;
   wip_limit?: number;
   column_type?: BoardColumnType;
-  board_id: string;
+  created_by: string;
   created_at: string;
   issues: IssueResponse[];
 }
 
 export interface BoardDataResponse {
-  board: {
-    id: string;
-    workspace_id: string;
-    name: string;
-    position: number;
-    created_at: string;
-    updated_at: string;
-  };
+  board: BoardSummaryResponse;
   columns: BoardColumnResponse[];
 }
 
 export interface IssueEventResponse {
   id: string;
+  issue_id: string;
   created_by: string;
   action_type: string;
   field: string;
   old_val?: string;
   new_val?: string;
   created_at: string;
-  users?: {
-    id: string;
-    username: string;
-    first_name?: string;
-    last_name?: string;
-    avatar_url?: string;
-  };
+  users?: UserSummary;
 }

@@ -1,8 +1,21 @@
-import { Entity, Column, ManyToOne, OneToMany, CreateDateColumn, PrimaryColumn, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  CreateDateColumn,
+  PrimaryColumn,
+  JoinColumn,
+} from 'typeorm';
 import { generateUUID } from '../../shared/index';
+import { User } from './user.entity';
 import { BoardColumn } from './board-column.entity';
 import { IssueEvent } from './issue-event.entity';
 import { IssueComment } from './issue-comment.entity';
+import { IssueDiagram } from './issue-diagram.entity';
+import { WorkspacePriority } from './workspace-priority.entity';
+import { WorkspaceTag } from './workspace-tag.entity';
 
 export type IssueWithCount = Issue & { comment_count: number };
 
@@ -57,9 +70,24 @@ export class Issue {
   @JoinColumn({ name: 'column_id' })
   column!: BoardColumn;
 
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'assignee_id' })
+  assignee?: User | null;
+
+  @ManyToOne(() => WorkspacePriority, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'priority_id' })
+  priority!: WorkspacePriority;
+
+  @ManyToOne(() => WorkspaceTag, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'tag_id' })
+  tag?: WorkspaceTag | null;
+
   @OneToMany(() => IssueEvent, (e) => e.issue)
   events!: IssueEvent[];
 
   @OneToMany(() => IssueComment, (c) => c.issue)
   comments!: IssueComment[];
+
+  @OneToOne(() => IssueDiagram, (d) => d.issue)
+  diagram?: IssueDiagram;
 }

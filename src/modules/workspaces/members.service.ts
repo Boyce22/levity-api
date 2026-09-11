@@ -138,6 +138,8 @@ function toMemberResponse(m: WorkspaceMember): WorkspaceMemberResponse {
     role: m.role,
     joined_at: m.joined_at.toISOString(),
     membership_status: m.membership_status,
+    left_at: m.left_at?.toISOString(),
+    last_accessed_at: m.last_accessed_at?.toISOString(),
     user: m.user
       ? {
           username: m.user.username,

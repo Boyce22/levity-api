@@ -74,6 +74,7 @@ export class BoardService {
         workspace_id: board.workspace_id,
         name: board.name,
         position: board.position,
+        created_by: board.created_by,
         created_at: board.created_at.toISOString(),
         updated_at: board.updated_at.toISOString(),
       },
@@ -126,8 +127,12 @@ export class BoardService {
         content: input.content,
         column_id: input.column_id,
         position: input.position,
+        description: input.description,
         priority_id: priorityId,
         tag_id: input.tag_id,
+        assignee_id: input.assignee_id,
+        story_points: input.story_points,
+        estimated_hours: input.estimated_hours,
       });
       await issueEventRepository.record({
         issue_id: created.id,
@@ -293,21 +298,14 @@ export class BoardService {
 
     return events.map((h) => ({
       id: h.id,
+      issue_id: h.issue_id,
       created_by: h.created_by,
       action_type: h.action_type,
       field: h.field,
       old_val: h.old_val,
       new_val: h.new_val,
       created_at: h.created_at.toISOString(),
-      users: h.users
-        ? {
-            id: h.users.id,
-            username: h.users.username,
-            first_name: h.users.first_name,
-            last_name: h.users.last_name,
-            avatar_url: h.users.avatar_url,
-          }
-        : undefined,
+      users: h.users,
     }));
   }
 
@@ -358,6 +356,7 @@ function toBoardColumnResponse(column: BoardColumn, coverUrlMap = new Map<string
     wip_limit: column.wip_limit ?? undefined,
     column_type: column.column_type ?? undefined,
     board_id: column.board_id,
+    created_by: column.created_by,
     created_at: column.created_at.toISOString(),
     issues: (column.issues ?? []).map((i) => toIssueResponse(i, coverUrlMap)),
   };

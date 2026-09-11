@@ -5,6 +5,8 @@ import { dateTimeSchema, uuidSchema } from '../shared/typebox';
 export const createColumnSchema = Type.Object({
   title: Type.String({ minLength: 1, maxLength: 100 }),
   position: Type.Number({ default: 0 }),
+  wip_limit: Type.Optional(Type.Union([Type.Integer({ exclusiveMinimum: 0 }), Type.Null()])),
+  column_type: Type.Optional(Type.Union([Type.Enum(BoardColumnType), Type.Null()])),
 });
 export type CreateColumnInput = Static<typeof createColumnSchema>;
 
@@ -25,8 +27,12 @@ export const createIssueSchema = Type.Object({
   content: Type.String({ minLength: 1, maxLength: 500 }),
   column_id: uuidSchema,
   position: Type.Number({ default: 0 }),
+  description: Type.Optional(Type.Union([Type.String({ maxLength: 10000 }), Type.Null()])),
   priority_id: Type.Optional(uuidSchema),
   tag_id: Type.Optional(uuidSchema),
+  assignee_id: Type.Optional(uuidSchema),
+  story_points: Type.Optional(Type.Integer({ minimum: 0 })),
+  estimated_hours: Type.Optional(Type.Number({ exclusiveMinimum: 0 })),
 });
 export type CreateIssueInput = Static<typeof createIssueSchema>;
 

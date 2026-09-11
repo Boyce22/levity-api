@@ -1,6 +1,8 @@
-import { Entity, Column, CreateDateColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
 import { NotificationType } from '../../contracts/index';
+import { User } from './user.entity';
+import { Issue } from './issue.entity';
 
 @Entity('notifications')
 export class Notification {
@@ -24,4 +26,16 @@ export class Notification {
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at!: Date;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user!: User;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'actor_id' })
+  actor?: User | null;
+
+  @ManyToOne(() => Issue, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'issue_id' })
+  issue?: Issue | null;
 }

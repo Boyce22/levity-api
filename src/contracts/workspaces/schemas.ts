@@ -12,6 +12,16 @@ export const renameWorkspaceSchema = Type.Object({
 });
 export type RenameWorkspaceInput = Static<typeof renameWorkspaceSchema>;
 
+export const createBoardSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 100 }),
+});
+export type CreateBoardInput = Static<typeof createBoardSchema>;
+
+export const renameBoardSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 100 }),
+});
+export type RenameBoardInput = Static<typeof renameBoardSchema>;
+
 export const generateInviteSchema = Type.Object({
   max_uses: Type.Integer({ exclusiveMinimum: 0, maximum: 100, default: 1 }),
   expires_in_hours: Type.Optional(Type.Integer({ exclusiveMinimum: 0, maximum: 720 })),
@@ -30,6 +40,11 @@ export const updateMemberRoleSchema = Type.Object({
   role: Type.Enum(WorkspaceRole),
 });
 export type UpdateMemberRoleInput = Static<typeof updateMemberRoleSchema>;
+
+export const updateBoardMemberRoleSchema = Type.Object({
+  role: Type.Enum(BoardRole),
+});
+export type UpdateBoardMemberRoleInput = Static<typeof updateBoardMemberRoleSchema>;
 
 export const createTagSchema = Type.Object({
   name: Type.String({ minLength: 1, maxLength: 50 }),

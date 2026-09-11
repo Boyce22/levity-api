@@ -69,6 +69,7 @@ function toTagResponse(t: WorkspaceTag): WorkspaceTagResponse {
     name: t.name,
     color: t.color,
     created_at: t.created_at.toISOString(),
+    updated_at: t.updated_at.toISOString(),
     status: t.status,
   };
 }
@@ -82,6 +83,7 @@ function toPriorityResponse(p: WorkspacePriority): WorkspacePriorityResponse {
     icon: p.icon,
     position: p.position,
     created_at: p.created_at.toISOString(),
+    updated_at: p.updated_at.toISOString(),
     code: p.code,
     is_system: p.is_system,
     status: p.status,

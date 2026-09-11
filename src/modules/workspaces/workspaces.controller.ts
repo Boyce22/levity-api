@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import {
   createWorkspaceSchema,
   renameWorkspaceSchema,
+  createBoardSchema,
+  renameBoardSchema,
   generateInviteSchema,
   idParamsSchema,
   tokenParamsSchema,
@@ -45,6 +47,20 @@ export function workspaceRoutes(
     fastify.get('/:id/boards', { preHandler: [authenticate] }, async (request) => {
       const { id } = validateDto(idParamsSchema, request.params);
       return workspaceService.getHomeBoards(request.user.id, id);
+    });
+
+    fastify.post('/:id/boards', { preHandler: [authenticate], schema: { body: createBoardSchema } }, async (request, reply) => {
+      const { id } = validateDto(idParamsSchema, request.params);
+      const input = validateDto(createBoardSchema, request.body);
+      const data = await workspaceService.createBoard(request.user.id, id, input);
+      reply.status(201);
+      return data;
+    });
+
+    fastify.patch('/:id/boards/:boardId', { preHandler: [authenticate], schema: { body: renameBoardSchema } }, async (request) => {
+      const { id, boardId } = validateDto(workspaceBoardParamsSchema, request.params);
+      const { name } = validateDto(renameBoardSchema, request.body);
+      return workspaceService.renameBoard(request.user.id, id, boardId, name);
     });
 
     fastify.post('/:id/boards/:boardId/self-grant', { preHandler: [authenticate] }, async (request) => {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createTagSchema } from '../../src/contracts/workspaces/schemas';
+import { createBoardSchema, createTagSchema } from '../../src/contracts/workspaces/schemas';
 import { queryNotificationsSchema } from '../../src/contracts/notifications/schemas';
 import { saveDiagramSchema } from '../../src/contracts/diagrams/schemas';
 import { validateDto } from '../../src/shared/validate-schema';
@@ -13,6 +13,10 @@ const id = '00000000-0000-0000-0000-000000000000';
 test('TypeBox strips unknown object properties like the previous schemas', () => {
   const result = validateDto(createTagSchema, { name: 'Bug', color: '#abcdef', ignored: true });
   assert.deepEqual(result, { name: 'Bug', color: '#abcdef' });
+});
+
+test('createBoardSchema requires a name', () => {
+  assert.deepEqual(validateDto(createBoardSchema, { name: 'Roadmap', extra: true }), { name: 'Roadmap' });
 });
 
 test('query coercion is explicit and rejects fractional integers', () => {

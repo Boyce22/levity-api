@@ -1,5 +1,6 @@
-import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { generateUUID } from '../../shared/index';
+import { Issue } from './issue.entity';
 
 @Entity('issue_diagrams')
 export class IssueDiagram {
@@ -17,4 +18,8 @@ export class IssueDiagram {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at!: Date;
+
+  @ManyToOne(() => Issue, (issue) => issue.diagram, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'issue_id' })
+  issue!: Issue;
 }
