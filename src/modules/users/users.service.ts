@@ -14,6 +14,7 @@ export class UsersService {
   async getProfile(userId: string): Promise<UserResponse> {
     const user = await this.userRepository.findByIdOrFail(userId);
     const response = toUserResponse(user);
+    if (!user.avatar_url) return response;
     response.avatar_url = await this.filesService.resolveUrl(user.avatar_url);
     return response;
   }
