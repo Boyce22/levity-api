@@ -41,12 +41,12 @@ export class UserRepository {
     return query.getMany();
   }
 
-  async create(data: { username: string; password: string; email?: string }): Promise<User> {
+  async create(data: { username: string; password: string; email?: string; avatar_url: string }): Promise<User> {
     const existing = await this.findByUsername(data.username);
     if (existing) throw new ConflictError('Username already taken');
 
     const user = this.repository.create(data);
-    return this.repository.save(user);
+    return this.repository.save(user); 
   }
 
   async update(id: string, input: UpdateUserProfileInput): Promise<User> {

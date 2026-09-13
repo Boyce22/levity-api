@@ -29,7 +29,8 @@ export class AuthService {
 
   async register(username: string, password: string, email?: string): Promise<AuthTokens> {
     const hashed = await bcrypt.hash(password, 12);
-    const user = await this.userRepository.create({ username, password: hashed, email });
+    const avatar_url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Math.random()}`;
+    const user = await this.userRepository.create({ username, password: hashed, email, avatar_url });
     await this.userRepository.touchLastLogin(user.id);
 
     const accessToken = this.signToken(user.id, user.username);
