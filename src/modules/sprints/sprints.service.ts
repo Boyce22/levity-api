@@ -12,6 +12,7 @@ import {
   SprintTrackingMode,
 } from '../../contracts/index';
 import {
+  IssueRepository,
   Sprint,
   SprintIssue,
   SprintRepository,
@@ -24,6 +25,7 @@ export class SprintService {
     private readonly sprintRepository: SprintRepository,
     private readonly memberRepository: BoardMemberRepository,
     private readonly transactionManager: TransactionManager,
+    private readonly issueRepository: IssueRepository,
   ) {}
 
   async getSprintsByBoard(boardId: string, userId: string): Promise<SprintResponse[]> {
@@ -156,8 +158,12 @@ export class SprintService {
   ): Promise<SprintIssueResponse> {
     await this.memberRepository.assertWrite(userId, boardId);
     await this.requireSprintOnBoard(boardId, sprintId);
-
     const existing = await this.sprintRepository.findIssueInActiveSprint(issueId);
+
+    if (!(await this.issueRepository.belongsToBoard(issueId, boardId))) {
+      throw new NotFoundError("Issue not found in this board");
+    }
+
     if (existing && existing.sprint_id !== sprintId) {
       throw new ConflictError('Issue is already assigned to another active sprint');
     }

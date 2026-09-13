@@ -122,8 +122,29 @@ export class MembersService {
     input: UpdateMemberRoleInput,
   ): Promise<WorkspaceMemberResponse> {
     await this.memberRepository.assertRole(actorId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
-    const member = await this.memberRepository.updateRole(workspaceId, memberId, input.role);
-    return toMemberResponse(member);
+    const actor = (await this.memberRepository.findByUserAndWorkspace(actorId, workspaceId));
+    const member = (await this.memberRepository.findByUserAndWorkspace(memberId, workspaceId));
+
+    if (!member)
+      throw new NotFoundError('Member not found');
+
+    if (actorId === memberId) 
+      throw new BadRequestError('You cannot change your own role');
+
+    if (actor?.role === WorkspaceRole.ADMIN) {
+      if (member?.role === WorkspaceRole.OWNER) 
+        throw new BadRequestError('Admins cannot modify an owner');
+
+      if (input.role === WorkspaceRole.OWNER) 
+        throw new BadRequestError('Admins cannot promote members to owner');
+
+      if (input.role === WorkspaceRole.ADMIN) 
+        throw new BadRequestError('Admins cannot promote members to admin');
+      
+    }
+
+    const updatedMember = await this.memberRepository.updateRole(workspaceId, memberId, input.role);
+    return toMemberResponse(updatedMember);
   }
 
   async revokeInvite(userId: string, workspaceId: string, inviteId: string): Promise<void> {
@@ -137,6 +158,18 @@ export class MembersService {
 
   async removeMember(actorId: string, workspaceId: string, memberId: string): Promise<void> {
     await this.memberRepository.assertRole(actorId, workspaceId, WorkspaceRole.OWNER, WorkspaceRole.ADMIN);
+    const actor = (await this.memberRepository.findByUserAndWorkspace(actorId, workspaceId));
+    const member = (await this.memberRepository.findByUserAndWorkspace(memberId, workspaceId));
+
+    if (!member) 
+      throw new NotFoundError('Member not found');
+    
+    if (actor?.role === WorkspaceRole.ADMIN && member?.role === WorkspaceRole.OWNER) 
+      throw new BadRequestError("Admins cannot remove a workspace owner")
+    
+    if (actorId === memberId) 
+      throw new BadRequestError("You cannot remove yourself from the workspace")
+    
     await this.memberRepository.remove(workspaceId, memberId);
     this.logger.info({ actorId, workspaceId, memberId }, 'Member removed');
   }

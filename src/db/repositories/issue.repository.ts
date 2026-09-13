@@ -78,6 +78,17 @@ export class IssueRepository {
     );
   }
 
+  async belongsToBoard(issueId: string, boardId: string): Promise<boolean> {
+  const issue = await this.repository
+    .createQueryBuilder('issue')
+    .innerJoin('issue.column', 'column')
+    .where('issue.id = :issueId', { issueId })
+    .andWhere('column.board_id = :boardId', { boardId })
+    .getOne();
+
+  return !!issue;
+}
+
   async delete(id: string): Promise<void> {
     const result = await this.repository.delete(id);
     if (!result.affected) throw new NotFoundError('Issue not found');

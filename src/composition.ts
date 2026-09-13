@@ -133,7 +133,7 @@ export function createApiContainer(options: CreateApiContainerOptions = {}): Api
     userRepository,
     logger.child({ name: 'files' }),
   );
-  const usersService = new UsersService(userRepository, filesService, logger.child({ name: 'users' }));
+  const usersService = new UsersService(userRepository, filesService, logger.child({ name: 'users' }), memberRepository);
   const workspaceService = new WorkspaceService(
     workspaceRepository,
     memberRepository,
@@ -173,7 +173,7 @@ export function createApiContainer(options: CreateApiContainerOptions = {}): Api
     logger.child({ name: 'boards' }),
     tagRepository,
   );
-  const sprintService = new SprintService(sprintRepository, boardMemberRepository, transactionManager);
+  const sprintService = new SprintService(sprintRepository, boardMemberRepository, transactionManager, issueRepository);
   const commentsService = new CommentsService(
     commentRepository,
     issueRepository,

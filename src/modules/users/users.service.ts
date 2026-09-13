@@ -1,14 +1,14 @@
 import type { Logger } from 'pino';
 import type { UpdateUserInput, UserResponse, UserPublicResponse } from '../../contracts/index';
-import type { User, UserRepository } from '../../db/index';
+import type { User, UserRepository, WorkspaceMemberRepository } from '../../db/index';
 import type { FilesService } from '../files/files.service';
-import { MultipartFile } from '@fastify/multipart';
 
 export class UsersService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly filesService: FilesService,
     private readonly logger: Logger,
+    private readonly memberRepository: WorkspaceMemberRepository,
   ) { }
 
   async getProfile(userId: string): Promise<UserResponse> {
@@ -19,7 +19,8 @@ export class UsersService {
     return response;
   }
 
-  async getUsersByWorkspace(workspaceId: string, search?: string): Promise<UserPublicResponse[]> {
+  async getUsersByWorkspace(userId: string, workspaceId: string, search?: string): Promise<UserPublicResponse[]> {
+    await this.memberRepository.assertMember(userId, workspaceId);
     const users = await this.userRepository.findByWorkspace(workspaceId, search);
     const avatarKeys = users.filter((u) => u.avatar_url).map((u) => u.avatar_url!);
     const urlMap = await this.filesService.resolveUrls(avatarKeys);

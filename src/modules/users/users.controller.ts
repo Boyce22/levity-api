@@ -16,7 +16,7 @@ export function usersRoutes(service: UsersService, authenticate: PreHandler) {
     fastify.get('/', { preHandler: [authenticate], schema: { querystring: queryUsersSchema } }, async (request) => {
       const { workspace_id, search } = request.query;
       if (!workspace_id) return [];
-      return service.getUsersByWorkspace(workspace_id, search);
+      return service.getUsersByWorkspace(request.user.id, workspace_id, search);
     });
   };
 }
