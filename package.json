@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "start": "node dist/main.js",
     "dev": "tsc -p tsconfig.json && node --enable-source-maps --watch dist/main.js",
-    "test": "node --test --require ts-node/register tests/modules/auth/auth.middleware.test.ts tests/contracts/auth/schemas.test.ts tests/contracts/shared/pagination.schema.test.ts tests/contracts/typebox-migration.test.ts tests/shared/error-handler.test.ts tests/shared/swagger.test.ts tests/shared/validate-schema.test.ts",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
     "typeorm": "typeorm-ts-node-commonjs -d ./src/db/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
@@ -50,10 +51,12 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.11.5",
     "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "^3.2.7",
     "eslint": "^9.39.1",
     "globals": "^15.15.0",
     "ts-node": "^10.9.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.46.2"
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^3.2.7"
   }
 }

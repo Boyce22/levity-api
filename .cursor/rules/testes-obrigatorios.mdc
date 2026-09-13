@@ -1,0 +1,27 @@
+---
+description: Obriga atualizar testes Vitest com cenários semânticos sempre que comportamento novo ou alterado for implementado.
+alwaysApply: true
+---
+
+# Testes obrigatórios
+
+Nenhuma implementação, correção ou mudança de contrato está completa sem testes atualizados. Siga a skill `melhorar-testes`.
+
+- Cubra o comportamento novo ou alterado no mesmo trabalho. **Controller, service e repository alterados ou novos sempre têm cenário** (E2E HTTP em `tests/e2e/` exercita as três camadas; unitário só para lógica pura extra).
+- `describe('METHOD /path')`; `it('...')` em português, descrevendo o comportamento (não “retorna 200”).
+- Por rota: feliz, auth (401), validação (422), autorização (403) e domínio (400/404/409) quando existirem no código.
+- Reuse `api()`, `./setup` e factories; estenda helpers em vez de duplicar setup.
+- Rode o recorte Vitest afetado e só encerre com os cenários novos/alterados passando.
+- Cobertura mínima **80%** global e **80%** em `*.controller.ts`, `*.service.ts` e `src/db/repositories/**` (`npm test` aplica o limiar). Não entregue camada nova com 0% nem baixe o threshold.
+
+```ts
+// ❌
+it('works', async () => { await api('POST', '/api/x', { token, body }); });
+
+// ✅
+it('rejeita o cadastro quando o username já está em uso', async () => {
+  const response = await api('POST', '/api/auth/register', { body: { username, password } });
+  expect(response.status).toBe(409);
+  expect(response.body).toMatchObject({ code: 'CONFLICT' });
+});
+```

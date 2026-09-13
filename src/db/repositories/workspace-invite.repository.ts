@@ -36,7 +36,7 @@ export class WorkspaceInviteRepository {
   }
 
   async consume(token: string): Promise<WorkspaceInvite> {
-    const rows: WorkspaceInvite[] = await this.repository.query(
+    const result: unknown = await this.repository.query(
       `UPDATE workspace_invites SET current_uses = current_uses + 1
        WHERE token = $1
          AND revoked_at IS NULL
@@ -45,6 +45,7 @@ export class WorkspaceInviteRepository {
        RETURNING *`,
       [token],
     );
+    const rows = returningRows<WorkspaceInvite>(result);
     const invite = rows[0];
     if (!invite) throw new BadRequestError('Invite is invalid, expired, or exhausted');
     return invite;
@@ -53,4 +54,14 @@ export class WorkspaceInviteRepository {
   async revoke(id: string): Promise<void> {
     await this.repository.update(id, { revoked_at: new Date() });
   }
+}
+
+function returningRows<T>(result: unknown): T[] {
+  if (Array.isArray(result) && Array.isArray(result[0])) {
+    return result[0] as T[];
+  }
+  if (Array.isArray(result)) {
+    return result as T[];
+  }
+  return [];
 }

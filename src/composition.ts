@@ -40,6 +40,7 @@ import { AppDataSource } from './db/data-source';
 import {
   CompressorService,
   createStorageProvider,
+  type StoragePort,
 } from './modules/files/storage';
 import { UsersService } from './modules/users/users.service';
 import { WorkspaceService } from './modules/workspaces/workspaces.service';
@@ -86,7 +87,11 @@ export interface ApiContainer {
   close(): Promise<void>;
 }
 
-export function createApiContainer(): ApiContainer {
+export interface CreateApiContainerOptions {
+  storage?: StoragePort;
+}
+
+export function createApiContainer(options: CreateApiContainerOptions = {}): ApiContainer {
   const logger = createLogger({
     level: env.LOG_LEVEL,
     pretty: env.NODE_ENV !== 'production',
@@ -122,7 +127,7 @@ export function createApiContainer(): ApiContainer {
   const authenticate: PreHandler = createAuthenticate(authService);
 
   const filesService = new FilesService(
-    createStorageProvider(env),
+    options.storage ?? createStorageProvider(env),
     new CompressorService(),
     memberRepository,
     userRepository,
