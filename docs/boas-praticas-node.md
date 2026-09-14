@@ -2,6 +2,14 @@
 
 Guia genérico para uma API HTTP em Node.js: organizada, testável e barata de operar. Independente de produto. Trate `@levity` como o scope npm do projeto.
 
+> [!NOTE]
+> Este arquivo descreve uma **arquitetura de referência**, não o inventário da
+> implementação atual. Em `levity-api@2eef9c7` o projeto é um package único com
+> `src/contracts`, `src/modules`, `src/db`, `src/config`, `src/shared` e
+> `composition.ts`; não há npm workspaces, Redis, filas ou worker. A suíte usa
+> Vitest com PostgreSQL real, e os controllers usam validação nativa Fastify +
+> TypeBox. Para comportamento HTTP atual, consulte [API.md](API.md).
+
 Não é um tutorial de TypeScript. São as decisões que evitam monolito acidental, N+1 e processo único que mistura HTTP com trabalho pesado.
 
 ---

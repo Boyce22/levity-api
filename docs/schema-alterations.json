@@ -1,8 +1,9 @@
 {
-  "$schema_note": "Plain JSON spec for an implementing LLM. Not JSON Schema. Read llm_contract first. Greenfield: there is no production database and no data to migrate.",
+  "$schema_note": "Historical implementation spec, not JSON Schema and no longer an execution contract. The greenfield baseline was applied and later followed by UppercaseEnumValues. Read current_state first; runtime code and migrations are authoritative.",
   "llm_contract": {
-    "role": "Implement only the changes listed in `changes` whose `status` is `approved` and whose `layer` is in `execution.allowed_layers`.",
+    "role": "Do not re-implement this plan. Use it only to understand the schema decision history. Runtime code, migrations and docs/API.md are authoritative.",
     "read_order": [
+      "current_state",
       "llm_contract",
       "execution",
       "context",
@@ -12,8 +13,8 @@
       "changes"
     ],
     "rules": [
-      "There is no production. Do not RENAME lists/cards. Do not backfill. Do not run orphan preflights.",
-      "Treat this file as the source of truth. Canvases are human views of the same plan.",
+      "Historical greenfield assumption: there was no production data when the baseline was created.",
+      "Do not treat this file as the current source of truth or execute its old waves.",
       "Apply changes in `wave` order. Inside a wave, respect `depends_on`.",
       "Wave 0 replaces the existing TypeORM migrations with one baseline that CREATE TABLE using the names in `target_schema`.",
       "Do not invent extra tables, columns, enums, or product features beyond this file.",
@@ -24,16 +25,16 @@
     ]
   },
   "execution": {
-    "status": "specified_not_applied",
-    "allowed_layers": ["db"],
-    "deferred_layers": ["app", "product_decision"],
+    "status": "implemented_and_superseded_in_part",
+    "allowed_layers": [],
+    "deferred_layers": ["product_decision"],
     "environment": "greenfield",
     "target": {
       "repo": "levity-api",
       "orm": "typeorm",
       "database": "postgresql",
       "migrations_dir": "src/db/migrations",
-      "strategy": "Replace InitialSchema + AddScalabilityIndexes + AddSprints with a single baseline migration. Drop the old migration files. Empty database assumed; `typeorm migration:run` on a fresh DB is the only path.",
+      "strategy": "Implemented as GreenfieldBaseline1767800000000, followed by UppercaseEnumValues1767900000000. Do not replace or replay this historical plan manually.",
       "suggested_migration_class": "GreenfieldBaseline1767800000000",
       "replace_migrations": [
         "1724700000000-InitialSchema.ts",
@@ -41,6 +42,17 @@
         "1760580000001-AddSprints.ts"
       ]
     }
+  },
+  "current_state": {
+    "verified_at": "2026-09-14",
+    "commit": "2eef9c7028093e195b2b514011882ac33593fc68",
+    "migrations": [
+      "1767800000000-GreenfieldBaseline.ts",
+      "1767900000000-UppercaseEnumValues.ts"
+    ],
+    "enum_wire_and_database_values": "UPPER_SNAKE_CASE; lowercase values below describe the pre-UppercaseEnumValues baseline only.",
+    "application_layer": "Implemented: multi-board routes, memberships/grants, board write roles, WIP, notifications, system priorities and sprint-per-board.",
+    "remaining_product_decision": "product.done_definition remains open; completion currently uses issue.progress === 100."
   },
   "context": {
     "product": "Levity — workspace (tenant) with N boards; kanban + optional sprint overlay per board",
@@ -96,7 +108,7 @@
     "Do not omit the four system priorities. Do not default issue priority_id to NULL.",
     "Do not inherit future boards on invite. Do not accept an invite with zero board grants.",
     "Do not add workspace_id denormalized on issues (reach workspace via column → board).",
-    "Do not enable WRITE_ROLES / wip_limit enforcement here (layer=app deferred).",
+    "WRITE_ROLES and wip_limit enforcement are implemented; do not disable them without an explicit product/security change.",
     "Do not drop column_type or progress; they diverge until product.done_definition.",
     "Do not add issues.deleted_at until product.soft_delete_issues is approved. Hard DELETE is fine.",
     "Do not modify files storage / cover_url semantics.",
@@ -108,6 +120,7 @@
     "Do not duplicate UNIQUE with a second btree on the same columns (no IDX_workspace_members_workspace_user)."
   ],
   "target_schema": {
+    "$historical_note": "Baseline before migration 1767900000000. Current enum labels/defaults/index predicates are uppercase.",
     "enums": {
       "users_account_status_enum": ["active", "suspended"],
       "workspace_status_enum": ["active", "archived"],
@@ -160,7 +173,7 @@
       "wave": 0,
       "layer": "db",
       "kind": "replace_migrations_with_baseline",
-      "status": "approved",
+      "status": "implemented",
       "tables": ["*"],
       "depends_on": [],
       "intent": "Empty-DB baseline. Names, FKs, and indexes below. Seed of priorities/columns/board_members is app (create workspace), not this migration — except CHECK/enums that the seed will use.",
@@ -503,7 +516,7 @@
       "wave": 99,
       "layer": "app",
       "kind": "service_wiring",
-      "status": "deferred",
+      "status": "implemented",
       "depends_on": ["schema.greenfield_baseline"],
       "intent": "Entities/DTOs/routes match baseline names. Create workspace transaction. Invite grants. Board ACL.",
       "rules": [
@@ -517,7 +530,7 @@
         "Settings catalog: deleted_at not DELETE. Refuse delete of is_system priorities.",
         "Home boards: WHERE board_members.membership_status=active. Owner/admin of WS may self-grant."
       ],
-      "acceptance": "API compiles without Card/List. New workspace has 1 board and 4 priorities. Invite without grants is 400."
+      "acceptance": "Implemented. API compiles without Card/List. New workspace has 1 board and 4 priorities. Request validation rejects invite without grants with 422."
     },
     {
       "id": "product.soft_delete_issues",
