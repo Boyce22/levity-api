@@ -375,6 +375,7 @@ export class GreenfieldBaseline1767800000000 implements MigrationInterface {
     await queryRunner.query(
       `CREATE INDEX "IDX_sprint_issues_issue_live" ON "sprint_issues" ("issue_id") WHERE removed_at IS NULL`,
     );
+    await queryRunner.query(`ALTER TABLE "workspace_members" ADD "avatar_url" varchar`)
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

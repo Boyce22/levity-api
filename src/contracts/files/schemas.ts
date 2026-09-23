@@ -11,6 +11,15 @@ export const uploadAvatarSchema = Type.Object({
   file: filePart,
 });
 
+export const uploadWorkspaceAvatarSchema = Type.Object({
+  workspace_id: uuidSchema,
+  file: filePart,
+});
+
+export const workspaceAvatarParamsSchema = Type.Object({
+  workspaceId: Type.String({ format: 'uuid' }),
+});
+
 export const uploadAttachmentSchema = Type.Object({
   workspace_id: uuidSchema,
   file: filePart,
@@ -32,3 +41,4 @@ export type UploadAvatarInput = Static<typeof uploadAvatarSchema>;
 export type UploadAttachmentInput = Static<typeof uploadAttachmentSchema>;
 export type DeleteFileInput = Static<typeof deleteFileSchema>;
 export type FileRouteParams = Static<typeof fileRouteParamsSchema>;
+export type UploadWorkspaceAvatarSchema = Static<typeof uploadWorkspaceAvatarSchema>;

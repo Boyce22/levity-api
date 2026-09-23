@@ -31,6 +31,9 @@ export class WorkspaceMember {
   })
   membership_status!: MembershipStatus;
 
+  @Column({ type: 'varchar', nullable: true })
+  avatar_url?: string | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   joined_at!: Date;
 

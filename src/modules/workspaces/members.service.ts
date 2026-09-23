@@ -13,12 +13,14 @@ import {
   BoardRepository,
   InviteBoardGrant,
   InviteBoardGrantRepository,
+  UserRepository,
   WorkspaceInvite,
   WorkspaceInviteRepository,
   WorkspaceMember,
   WorkspaceMemberRepository,
   type TransactionManager,
 } from '../../db/index';
+import { FilesService } from '../files/files.service';
 
 export class MembersService {
   constructor(
@@ -29,13 +31,45 @@ export class MembersService {
     private readonly boardRepository: BoardRepository,
     private readonly transactionManager: TransactionManager,
     private readonly logger: Logger,
+    private readonly userRepository: UserRepository,
+    private readonly filesService: FilesService,
   ) {}
 
-  async getMembers(userId: string, workspaceId: string): Promise<WorkspaceMemberResponse[]> {
-    await this.memberRepository.assertMember(userId, workspaceId);
-    const members = await this.memberRepository.findByWorkspace(workspaceId);
-    return members.map(toMemberResponse);
-  }
+    async getMembers(
+      userId: string,
+      workspaceId: string,
+    ): Promise<WorkspaceMemberResponse[]> {
+      await this.memberRepository.assertMember(userId, workspaceId);
+
+      const members = await this.memberRepository.findByWorkspace(workspaceId);
+
+      return Promise.all(
+        members.map(async member => {
+          const response = toMemberResponse(member);
+
+          let avatarUrl: string | null | undefined = member.avatar_url;
+
+          if (!avatarUrl) {
+            const user = await this.userRepository.findById(member.user_id);
+            avatarUrl = user?.avatar_url;
+          }
+
+          if (!avatarUrl) {
+            throw new Error('User has no avatar');
+          }
+
+          const resolvedAvatarUrl = await this.filesService.resolveUrl(avatarUrl);
+
+          if (!response.user) {
+            throw new Error('Workspace member has no user');
+          }
+
+          response.user.avatar_url = resolvedAvatarUrl;
+
+          return response;
+        }),
+      );
+    }
 
   async generateInvite(
     userId: string,

@@ -6,6 +6,8 @@ import {
   fileRouteParamsSchema,
   uploadAttachmentSchema,
   uploadAvatarSchema,
+  uploadWorkspaceAvatarSchema,
+  workspaceAvatarParamsSchema,
   type UploadedFile,
 } from '../../contracts';
 import { BadRequestError } from '../../shared';
@@ -57,6 +59,40 @@ export function filesRoutes(service: FilesService, authenticate: PreHandler) {
         if (!workspace_id) throw new BadRequestError('workspace_id is required');
         const data = await service.uploadAttachment(request.user.id, workspace_id, file);
         reply.status(201);
+        return data;
+      },
+    );
+
+    fastify.post(
+      '/workspaces/:workspaceId/avatar',
+      {
+        preHandler: [authenticate],
+        ...skipBodyValidation,
+        schema: {
+          consumes: ['multipart/form-data'],
+          params: workspaceAvatarParamsSchema,
+          body: uploadWorkspaceAvatarSchema,
+        },
+      },
+      async (request, reply) => {
+        const file = await request.file();
+
+        if (!file) {
+          throw new BadRequestError('No file provided');
+        }
+
+        if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
+          throw new BadRequestError(`File type not allowed: ${file.mimetype}`);
+        }
+
+        const data = await service.uploadWorkspaceAvatar(
+          request.user.id,
+          request.params.workspaceId,
+          file,
+        );
+
+        reply.status(201);
+
         return data;
       },
     );

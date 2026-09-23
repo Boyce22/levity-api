@@ -44,6 +44,16 @@ export class FilesService {
     return result;
   }
 
+  async uploadWorkspaceAvatar(userId: string, workspaceId: string, file: MultipartFile) {
+    const key = `workspace/${workspaceId}/avatars/${userId}.webp`;
+    const fileBuffer = await file.toBuffer();
+    const buffer = await this.compressor.compress(fileBuffer, { width: 256, height: 256, quality: 85 });
+    const result = await this.storage.upload(buffer, key, 'image/webp');
+    await this.userRepository.update(userId, { avatar_url: key });
+    this.logger.info({ userId, key }, 'Avatar uploaded');
+    return result; 
+  }
+
   async getSignedDownloadUrl(
     userId: string,
     workspaceId: string,
